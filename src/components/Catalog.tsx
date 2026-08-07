@@ -148,20 +148,37 @@ export const Catalog: React.FC = () => {
         ))}
       </div>
 
-      {/* Filter Row (Count & Veg Filter Pill) */}
+      {/* Filter Row (Count & Dietary Filters: Veg, Non-Veg, None) */}
       <div className="filter-sticky-row">
         <span style={{ fontSize: '13px', fontWeight: 900, color: '#0f172a' }}>
           {selectedSubCat === 'All' ? `${selectedMainCat} Specials` : selectedSubCat} ({filteredProducts.length})
         </span>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
             type="button"
-            className={`veg-filter-pill ${dietaryFilter === 'veg' ? 'active-veg' : ''}`}
-            onClick={() => setDietaryFilter(dietaryFilter === 'veg' ? 'all' : 'veg')}
+            className={`dietary-filter-pill ${dietaryFilter === 'veg' ? 'active-veg' : ''}`}
+            onClick={() => setDietaryFilter('veg')}
           >
             <span className="veg-dot" />
-            <span>Veg Only</span>
+            <span>Veg</span>
+          </button>
+
+          <button
+            type="button"
+            className={`dietary-filter-pill ${dietaryFilter === 'non-veg' ? 'active-nonveg' : ''}`}
+            onClick={() => setDietaryFilter('non-veg')}
+          >
+            <span className="nonveg-dot" />
+            <span>Non-Veg</span>
+          </button>
+
+          <button
+            type="button"
+            className={`dietary-filter-pill ${dietaryFilter === 'all' ? 'active-all' : ''}`}
+            onClick={() => setDietaryFilter('all')}
+          >
+            <span>None</span>
           </button>
         </div>
       </div>

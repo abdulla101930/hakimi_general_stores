@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { User, Download, ChevronDown, MapPin, Wallet } from 'lucide-react';
+import { User, Download, ChevronDown, MapPin } from 'lucide-react';
+import { calculateDeliveryMetrics } from '../utils/geoUtils';
 
 interface NavbarProps {
   onOpenPWA?: () => void;
@@ -13,18 +14,24 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const { user, role, logout, setLoginOpen, currentView, setView, selectedAddress } = useApp();
 
+  // Dynamic distance and estimated delivery time calculation relative to shop in Chandni Chowk, Ratlam
+  const { timeText, distanceText } = calculateDeliveryMetrics(
+    selectedAddress?.gps,
+    selectedAddress?.details
+  );
+
   return (
     <header className="blinkit-header">
       <div className="blinkit-top-header-banner">
         <div className="blinkit-header-row">
-          {/* Brand Name & Delivery Time Header */}
+          {/* Brand Name & Dynamic Delivery Time Header */}
           <div className="blinkit-brand-title-group">
             <span className="blinkit-brand-sub">Hakimi General Store in</span>
             <h1 className="blinkit-header-main-title">
-              8 minutes
+              {timeText}
               <span className="blinkit-distance-badge">
                 <MapPin size={10} color="#1d4ed8" fill="#1d4ed8" />
-                1 km away
+                {distanceText}
               </span>
             </h1>
             <div 
@@ -42,7 +49,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Right Action Icons: Wallet & User Profile */}
+          {/* Right Action Icons: App & User Profile (Wallet removed per request) */}
           <div className="blinkit-header-user-actions">
             {/* Download PWA App */}
             <button 
@@ -55,12 +62,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Download size={12} />
               <span>App</span>
             </button>
-
-            {/* Wallet badge */}
-            <div className="blinkit-wallet-badge">
-              <Wallet size={12} color="#2563eb" />
-              <span>₹0</span>
-            </div>
 
             {/* Account / User Avatar */}
             <button 
