@@ -446,7 +446,14 @@ export const DEFAULT_PRODUCTS: Product[] = [
   }
 ];
 
-const OWNER_PHONE = '+919657152532';
+export const OWNER_PHONE = '+919993949604';
+export const OWNER_PHONE_DISPLAY = '+91 99939 49604';
+
+export const isOwnerPhone = (phone: string) => {
+  if (!phone) return false;
+  const clean = phone.replace(/\D/g, '');
+  return clean === '919993949604' || clean === '9993949604';
+};
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<{ phone: string; name: string; addresses: Address[] } | null>(() => {
@@ -458,7 +465,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const savedUser = localStorage.getItem('hakimi_user');
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
-      return (parsed.phone === OWNER_PHONE || parsed.phone === '9657152532') ? 'owner' : 'customer';
+      return isOwnerPhone(parsed.phone) ? 'owner' : 'customer';
     }
     return 'customer';
   });
@@ -485,7 +492,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const savedUser = localStorage.getItem('hakimi_user');
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
-      return (parsed.phone === OWNER_PHONE || parsed.phone === '9657152532') ? 'admin' : 'catalog';
+      return isOwnerPhone(parsed.phone) ? 'admin' : 'catalog';
     }
     return 'catalog';
   });
@@ -635,7 +642,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('hakimi_user', JSON.stringify(newUser));
     setUser(newUser);
     
-    if (formattedPhone === OWNER_PHONE || formattedPhone === '+919657152532' || formattedPhone === '9657152532') {
+    if (isOwnerPhone(formattedPhone)) {
       setRole('owner');
       setView('admin');
     } else {

@@ -1,6 +1,6 @@
 import type { Order } from '../context/AppContext';
 
-const OWNER_PHONE = '919657152532'; // Clean phone number for wa.me API (no + or spaces)
+const OWNER_PHONE = '919993949604'; // Clean phone number for wa.me API (no + or spaces)
 
 /**
  * Formats order information and generates a WhatsApp URL to message the owner.
