@@ -9,7 +9,8 @@ import { OwnerDashboard } from './components/OwnerDashboard';
 import { MapPickerModal } from './components/MapPickerModal';
 import { PWAInstallModal } from './components/PWAInstallModal';
 import { DevLogsModal } from './components/DevLogsModal';
-import { FloatingBottomNav } from './components/FloatingBottomNav';
+import { CartPage } from './components/CartPage';
+import { MagicBottomNav } from './components/MagicBottomNav';
 import { ArrowRight } from 'lucide-react';
 import type { Address } from './context/AppContext';
 
@@ -20,7 +21,7 @@ interface Toast {
 }
 
 const MainLayout: React.FC = () => {
-  const { currentView, cart, setCartOpen, activeOrder, setView, role, orders, addNewAddress, setSelectedAddress, catalog } = useApp();
+  const { currentView, cart, activeOrder, setView, role, orders, addNewAddress, setSelectedAddress } = useApp();
   
   // Modals state
   const [isMapOpen, setMapOpen] = useState(false);
@@ -86,12 +87,8 @@ const MainLayout: React.FC = () => {
     };
   }, []);
 
-  // Calculate cart subtotal & item count for floating cart bar
+  // Calculate item count for floating active order banner
   const totalItems = Object.values(cart).reduce((sum, count) => sum + count, 0);
-  const cartSubtotal = Object.entries(cart).reduce((sum, [id, qty]) => {
-    const p = catalog.find(prod => prod.id === id);
-    return sum + (p ? p.price * qty : 0);
-  }, 0);
 
   // Request browser Notification permissions on mount
   useEffect(() => {
@@ -251,6 +248,8 @@ const MainLayout: React.FC = () => {
         <OwnerDashboard />
       ) : currentView === 'tracking' ? (
         <DeliveryTracking />
+      ) : currentView === 'cart' ? (
+        <CartPage onOpenMap={() => setMapOpen(true)} />
       ) : (
         <>
           {/* Header */}
@@ -301,29 +300,12 @@ const MainLayout: React.FC = () => {
               </span>
             </div>
           )}
-
-          {/* Blinkit Style Floating Cart Trigger */}
-          {totalItems > 0 && (
-            <div className="floating-cart-bar" onClick={() => setCartOpen(true)}>
-              <div className="cart-bar-left">
-                <div className="cart-count-badge">
-                  {totalItems}
-                </div>
-                <div className="cart-bar-details">
-                  <span className="cart-bar-title">{totalItems} {totalItems === 1 ? 'ITEM' : 'ITEMS'}</span>
-                  <span className="cart-bar-subtitle">₹{cartSubtotal} + Taxes & Charges</span>
-                </div>
-              </div>
-              <div className="cart-bar-right">
-                <span>View Cart</span>
-                <ArrowRight size={16} strokeWidth={3} />
-              </div>
-            </div>
-          )}
-
-          {/* Floating Bottom Nav Bar */}
-          <FloatingBottomNav onOpenCart={() => setCartOpen(true)} />
         </>
+      )}
+
+      {/* Magic Bottom Navigation Menu */}
+      {currentView !== 'admin' && (
+        <MagicBottomNav onOpenPWA={() => setPWAOpen(true)} />
       )}
 
       {/* Drawers and Modals */}

@@ -83,7 +83,7 @@ interface AppContextType {
   cart: Record<string, number>;
   orders: Order[];
   activeOrder: Order | null;
-  currentView: 'catalog' | 'tracking' | 'admin';
+  currentView: 'catalog' | 'cart' | 'tracking' | 'admin';
   addressList: Address[];
   selectedAddress: Address | null;
   appliedCoupon: Coupon | null;
@@ -95,7 +95,7 @@ interface AppContextType {
   logout: () => void;
   setCartOpen: (open: boolean) => void;
   setLoginOpen: (open: boolean) => void;
-  setView: (view: 'catalog' | 'tracking' | 'admin') => void;
+  setView: (view: 'catalog' | 'cart' | 'tracking' | 'admin') => void;
   addToCart: (productId: string) => void;
   removeFromCart: (productId: string) => void;
   updateCartQty: (productId: string, qty: number) => void;
@@ -489,7 +489,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [currentView, setView] = useState<'catalog' | 'tracking' | 'admin'>(() => {
+  const [currentView, setView] = useState<'catalog' | 'cart' | 'tracking' | 'admin'>(() => {
     const savedUser = localStorage.getItem('hakimi_user');
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
