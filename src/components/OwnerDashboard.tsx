@@ -1,0 +1,638 @@
+import React, { useState } from 'react';
+import { useApp } from '../context/AppContext';
+import { FOOD_SUBDIVISIONS as FOOD_SUBS, HYGIENE_SUBDIVISIONS as HYG_SUBS } from './Catalog';
+import type { Product, Order } from '../context/AppContext';
+import { Plus, Edit, Trash2, Package, Truck, Save, User } from 'lucide-react';
+
+export const OwnerDashboard: React.FC = () => {
+  const { 
+    catalog, 
+    orders, 
+    updateOrderStatus, 
+    addProduct, 
+    updateProduct, 
+    deleteProduct,
+    logout,
+    setView,
+    freeDeliveryThreshold,
+    setFreeDeliveryThreshold
+  } = useApp();
+
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'settings'>('orders');
+  const [selectedCustomerPhone, setSelectedCustomerPhone] = useState<string>('all');
+  const [thresholdInput, setThresholdInput] = useState<string>(freeDeliveryThreshold.toString());
+  const [thresholdMsg, setThresholdMsg] = useState<string>('');
+
+  // Catalog Form state variables
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [originalPrice, setOriginalPrice] = useState('');
+  const [weight, setWeight] = useState('');
+  const [mainCategory, setMainCategory] = useState<'Food' | 'Hygiene'>('Food');
+  const [subCategory, setSubCategory] = useState('veg/fruits');
+  const [dietaryType, setDietaryType] = useState<'veg' | 'non-veg' | 'none'>('veg');
+  const [inStock, setInStock] = useState(true);
+  const [image, setImage] = useState('🍎');
+  const [handlingFee, setHandlingFee] = useState('');
+
+  const [formError, setFormError] = useState('');
+  const [formSuccess, setFormSuccess] = useState('');
+
+  const handleSaveThreshold = (e: React.FormEvent) => {
+    e.preventDefault();
+    const val = parseFloat(thresholdInput);
+    if (isNaN(val) || val < 0) {
+      alert("Please enter a valid numeric threshold.");
+      return;
+    }
+    setFreeDeliveryThreshold(val);
+    setThresholdMsg(`✅ Free delivery threshold saved to ₹${val}!`);
+    setTimeout(() => setThresholdMsg(''), 3500);
+  };
+
+  const handleCatalogFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !price || !weight || !image) {
+      setFormError('Please fill out all required fields.');
+      return;
+    }
+
+    const priceNum = parseFloat(price);
+    const origPriceNum = originalPrice ? parseFloat(originalPrice) : undefined;
+    const handlingFeeNum = handlingFee.trim() ? parseFloat(handlingFee) : undefined;
+
+    if (isNaN(priceNum) || priceNum <= 0) {
+      setFormError('Please enter a valid price.');
+      return;
+    }
+
+    setFormError('');
+
+    if (editingId) {
+      updateProduct(editingId, {
+        name,
+        price: priceNum,
+        originalPrice: origPriceNum,
+        weight,
+        mainCategory,
+        subCategory,
+        dietaryType,
+        inStock,
+        image,
+        handlingFee: handlingFeeNum
+      });
+      setFormSuccess('Product details updated!');
+      setEditingId(null);
+    } else {
+      addProduct({
+        name,
+        price: priceNum,
+        originalPrice: origPriceNum,
+        weight,
+        mainCategory,
+        subCategory,
+        dietaryType,
+        inStock,
+        image,
+        handlingFee: handlingFeeNum
+      });
+      setFormSuccess('Product added to catalog!');
+    }
+
+    resetForm();
+    setTimeout(() => setFormSuccess(''), 3000);
+  };
+
+  const loadProductToEdit = (p: Product) => {
+    setEditingId(p.id);
+    setName(p.name);
+    setPrice(p.price.toString());
+    setOriginalPrice(p.originalPrice?.toString() || '');
+    setWeight(p.weight);
+    setMainCategory(p.mainCategory || 'Food');
+    setSubCategory(p.subCategory || 'veg/fruits');
+    setDietaryType(p.dietaryType || 'veg');
+    setInStock(p.inStock);
+    setImage(p.image);
+    setHandlingFee(p.handlingFee?.toString() || '');
+    setFormError('');
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setName('');
+    setPrice('');
+    setOriginalPrice('');
+    setWeight('');
+    setMainCategory('Food');
+    setSubCategory('veg/fruits');
+    setDietaryType('veg');
+    setInStock(true);
+    setImage('🍎');
+    setHandlingFee('');
+    setFormError('');
+  };
+
+  // Get list of unique customer phones for history filtering
+  const uniqueCustomers = Array.from(new Set(orders.map(o => o.customerPhone)));
+
+  // Filter orders by customer phone if selected
+  const filteredOrders = selectedCustomerPhone === 'all' 
+    ? orders 
+    : orders.filter(o => o.customerPhone === selectedCustomerPhone);
+
+  const availableSubdivisions = mainCategory === 'Food' 
+    ? FOOD_SUBS.filter(s => s !== 'All') 
+    : HYG_SUBS.filter(s => s !== 'All');
+
+  return (
+    <div className="admin-container">
+      {/* Admin Title bar */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '14px 16px',
+        backgroundColor: 'var(--bg-sheet)',
+        borderBottom: '1px solid var(--border-color)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            backgroundColor: '#eff6ff',
+            borderRadius: '8px',
+            width: '32px',
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px solid #bfdbfe'
+          }}>
+            <Package size={16} color="var(--primary)" />
+          </div>
+          <div>
+            <h2 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Merchant Dashboard</h2>
+            <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Hakimi Store Owner Portal</span>
+          </div>
+        </div>
+
+        <button 
+          onClick={() => { logout(); setView('catalog'); }}
+          style={{
+            background: 'transparent',
+            border: '1px solid var(--border-color)',
+            borderRadius: '20px',
+            padding: '4px 12px',
+            fontSize: '11px',
+            color: 'var(--error)',
+            cursor: 'pointer',
+            fontWeight: 600
+          }}
+        >
+          Sign Out
+        </button>
+      </div>
+
+      {/* Admin Navigation Tabs */}
+      <div className="admin-tabs">
+        <div 
+          className={`admin-tab ${activeTab === 'orders' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('orders'); resetForm(); }}
+        >
+          Orders & Timelogs ({orders.length})
+        </div>
+        <div 
+          className={`admin-tab ${activeTab === 'products' ? 'active' : ''}`}
+          onClick={() => setActiveTab('products')}
+        >
+          Manage Catalog
+        </div>
+        <div 
+          className={`admin-tab ${activeTab === 'settings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('settings')}
+        >
+          Delivery Settings
+        </div>
+      </div>
+
+      {/* Main Workspace */}
+      <div className="scrollable" style={{ paddingBottom: '30px' }}>
+        
+        {/* --- TAB 1: ORDERS & TIMELOGS --- */}
+        {activeTab === 'orders' && (
+          <div className="admin-orders-list">
+            
+            {/* Customer Filter Selector */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                <User size={14} color="var(--primary)" />
+                <span>Filter by Customer:</span>
+              </div>
+              <select
+                className="status-dropdown"
+                value={selectedCustomerPhone}
+                onChange={(e) => setSelectedCustomerPhone(e.target.value)}
+                style={{ fontSize: '11px', padding: '4px 8px' }}
+              >
+                <option value="all">All Customers ({orders.length} orders)</option>
+                {uniqueCustomers.map(phone => {
+                  const custOrders = orders.filter(o => o.customerPhone === phone);
+                  const custName = custOrders[0]?.customerName || 'Customer';
+                  return (
+                    <option key={phone} value={phone}>
+                      {custName} ({phone}) - {custOrders.length} orders
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+            
+            {filteredOrders.length === 0 ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '40px 20px',
+                backgroundColor: 'var(--bg-card)',
+                borderRadius: '12px',
+                border: '1px solid var(--border-color)'
+              }}>
+                <span style={{ fontSize: '32px' }}>📭</span>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+                  No customer orders match this filter.
+                </p>
+              </div>
+            ) : (
+              filteredOrders.map(order => (
+                <div key={order.id} className="admin-order-card" style={{ borderLeft: '4px solid var(--primary)' }}>
+                  <div className="admin-order-header">
+                    <div>
+                      <span className="admin-order-id">{order.id}</span>
+                      <div className="admin-order-date">{order.date}</div>
+                    </div>
+                    
+                    {/* Status Dropdown */}
+                    <select
+                      className="status-dropdown"
+                      value={order.status}
+                      onChange={(e) => updateOrderStatus(order.id, e.target.value as Order['status'])}
+                    >
+                      <option value="placed">Placed</option>
+                      <option value="packing">Packing</option>
+                      <option value="out_for_delivery">Out for Delivery</option>
+                      <option value="delivered">Delivered</option>
+                    </select>
+                  </div>
+
+                  {/* Customer Info & Coordinates */}
+                  <div style={{ fontSize: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                      👤 {order.customerName} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({order.customerPhone})</span>
+                    </div>
+                    <div style={{ color: 'var(--text-secondary)', marginTop: '2px', fontSize: '11px' }}>
+                      📍 <strong>{order.address.type}:</strong> {order.address.details}
+                    </div>
+                    {order.address.gps && (
+                      <div style={{ fontSize: '10px', color: 'var(--primary)', fontWeight: 700, marginTop: '2px' }}>
+                        🌐 GPS Coordinates: Lat {order.address.gps.lat}, Lng {order.address.gps.lng}
+                      </div>
+                    )}
+                    {order.instructions && (
+                      <div style={{ 
+                        marginTop: '4px', 
+                        fontSize: '11px', 
+                        backgroundColor: '#eff6ff', 
+                        padding: '4px 8px', 
+                        borderRadius: '4px',
+                        border: '1px solid #bfdbfe',
+                        color: '#1e3a8a'
+                      }}>
+                        💬 <strong>Instructions:</strong> "{order.instructions}"
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Timelogs Details */}
+                  <div style={{
+                    backgroundColor: 'var(--bg-main)',
+                    padding: '6px 10px',
+                    borderRadius: 'var(--border-radius-sm)',
+                    margin: '6px 0',
+                    fontSize: '10px',
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '4px'
+                  }}>
+                    <div>⏱️ Placed: <strong>{order.timelog?.placedAt || 'Recorded'}</strong></div>
+                    <div>📦 Packing: <strong>{order.timelog?.packingAt || '--'}</strong></div>
+                    <div>🛵 Out: <strong>{order.timelog?.outForDeliveryAt || '--'}</strong></div>
+                    <div>🎁 Delivered: <strong>{order.timelog?.deliveredAt || '--'}</strong></div>
+                  </div>
+
+                  {/* Order Items */}
+                  <div className="admin-order-items">
+                    {order.items.map(item => (
+                      <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                        <span>• {item.name} ({item.weight}) x {item.quantity}</span>
+                        <span>₹{item.price * item.quantity}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Billing Breakdown */}
+                  <div className="admin-order-footer" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '8px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      Bill: Items ₹{order.bill.itemsTotal} | Fee ₹{order.bill.handlingCharge} | Del ₹{order.bill.deliveryCharge} | Disc ₹{order.bill.discount}
+                    </div>
+                    <span className="admin-order-amount">₹{order.bill.grandTotal}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* --- TAB 2: MANAGE CATALOG --- */}
+        {activeTab === 'products' && (
+          <div className="admin-products-list">
+            <h3 className="admin-form-title" style={{ padding: '0 4px' }}>
+              {editingId ? 'Edit Product details' : 'Add New Product to Catalog'}
+            </h3>
+
+            {formError && (
+              <div style={{ backgroundColor: 'var(--error-bg)', color: 'var(--error)', border: '1px solid var(--error)', padding: '10px', borderRadius: '8px', fontSize: '11px', fontWeight: 500 }}>
+                {formError}
+              </div>
+            )}
+            
+            {formSuccess && (
+              <div style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)', border: '1px solid var(--success)', padding: '10px', borderRadius: '8px', fontSize: '11px', fontWeight: 500 }}>
+                {formSuccess}
+              </div>
+            )}
+
+            {/* Catalog Editing Form */}
+            <form onSubmit={handleCatalogFormSubmit} className="admin-form" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
+              <div className="input-group">
+                <label className="input-label">Product Name *</label>
+                <input 
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Fresh Red Tomatoes"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-row-2">
+                <div className="input-group">
+                  <label className="input-label">Main Category *</label>
+                  <select 
+                    className="form-input"
+                    value={mainCategory}
+                    onChange={(e) => {
+                      const newMain = e.target.value as 'Food' | 'Hygiene';
+                      setMainCategory(newMain);
+                      setSubCategory(newMain === 'Food' ? 'veg/fruits' : 'bath/body');
+                      if (newMain === 'Hygiene') setDietaryType('none');
+                    }}
+                  >
+                    <option value="Food">Food</option>
+                    <option value="Hygiene">Hygiene</option>
+                  </select>
+                </div>
+
+                <div className="input-group">
+                  <label className="input-label">Subcategory *</label>
+                  <select 
+                    className="form-input"
+                    value={subCategory}
+                    onChange={(e) => setSubCategory(e.target.value)}
+                  >
+                    {availableSubdivisions.map(sub => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row-2">
+                <div className="input-group">
+                  <label className="input-label">Dietary Type *</label>
+                  <select
+                    className="form-input"
+                    value={dietaryType}
+                    onChange={(e) => setDietaryType(e.target.value as any)}
+                  >
+                    <option value="veg">🟢 Veg</option>
+                    <option value="non-veg">🔴 Non-Veg</option>
+                    <option value="none">⚪ None (Hygiene / General)</option>
+                  </select>
+                </div>
+
+                <div className="input-group">
+                  <label className="input-label">Weight/Volume *</label>
+                  <input 
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. 500 g, 1 L, 6 pcs"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-row-2">
+                <div className="input-group">
+                  <label className="input-label">Selling Price (₹) *</label>
+                  <input 
+                    type="number"
+                    className="form-input"
+                    placeholder="e.g. 45"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label className="input-label">Original Price (₹)</label>
+                  <input 
+                    type="number"
+                    className="form-input"
+                    placeholder="Optional (Strikeout price)"
+                    value={originalPrice}
+                    onChange={(e) => setOriginalPrice(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row-2">
+                <div className="input-group">
+                  <label className="input-label">Emoji / Pic URL *</label>
+                  <input 
+                    type="text"
+                    className="form-input"
+                    placeholder="Emoji (e.g. 🍎) or URL"
+                    value={image}
+                    onChange={(e) => setImage(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label className="input-label">Handling Fee (₹)</label>
+                  <input 
+                    type="number"
+                    className="form-input"
+                    placeholder="Optional (0 if empty)"
+                    value={handlingFee}
+                    onChange={(e) => setHandlingFee(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="input-group" style={{ margin: '4px 0' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '12px' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={inStock}
+                    onChange={(e) => setInStock(e.target.checked)}
+                    style={{ width: '16px', height: '16px', accentColor: 'var(--primary)' }}
+                  />
+                  <span>Product currently in stock</span>
+                </label>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, marginTop: '8px' }}>
+                {editingId && (
+                  <button 
+                    type="button" 
+                    className="btn-primary" 
+                    onClick={resetForm}
+                    style={{ flex: 1, backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button type="submit" className="btn-primary" style={{ flex: 2 }}>
+                  <Plus size={16} />
+                  <span>{editingId ? 'Update Product' : 'Add Product'}</span>
+                </button>
+              </div>
+            </form>
+
+            {/* Catalog List */}
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '10px' }}>
+              <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '12px', padding: '0 4px' }}>
+                Inventory ({catalog.length} products)
+              </h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {catalog.map(product => (
+                  <div key={product.id} className="admin-product-item">
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <div className="admin-product-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+                        {product.image.startsWith('http') ? (
+                          <img src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                        ) : (
+                          product.image
+                        )}
+                      </div>
+                      
+                      <div className="admin-product-info">
+                        <div className="admin-product-name">{product.name}</div>
+                        <div className="admin-product-meta">
+                          {product.mainCategory || 'Food'} ➔ {product.subCategory} | ₹{product.price} {product.originalPrice && <s style={{ fontSize: '9px' }}>₹{product.originalPrice}</s>} | {product.inStock ? <span style={{ color: 'var(--success)' }}>In Stock</span> : <span style={{ color: 'var(--error)' }}>Out</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="admin-product-actions">
+                      <button 
+                        className="btn-icon-action" 
+                        onClick={() => loadProductToEdit(product)}
+                        title="Edit Item"
+                      >
+                        <Edit size={14} />
+                      </button>
+                      
+                      <button 
+                        className="btn-icon-action delete" 
+                        onClick={() => {
+                          if (confirm(`Delete ${product.name} from catalog?`)) {
+                            deleteProduct(product.id);
+                          }
+                        }}
+                        title="Delete Item"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- TAB 3: DELIVERY SETTINGS (Editable Threshold) --- */}
+        {activeTab === 'settings' && (
+          <div style={{ padding: '16px' }}>
+            <div style={{
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius-md)',
+              padding: '16px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '12px' }}>
+                <Truck size={20} color="var(--primary)" />
+                <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                  Free Delivery & Convenience Fee Threshold
+                </h3>
+              </div>
+
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '16px' }}>
+                Set the order price limit after which the handling charge and convenience fee will be waived for customers (e.g. ₹200 or ₹100).
+              </p>
+
+              {thresholdMsg && (
+                <div style={{
+                  backgroundColor: 'var(--success-bg)',
+                  color: 'var(--success)',
+                  padding: '8px 12px',
+                  borderRadius: 'var(--border-radius-sm)',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  marginBottom: '12px'
+                }}>
+                  {thresholdMsg}
+                </div>
+              )}
+
+              <form onSubmit={handleSaveThreshold} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div className="input-group">
+                  <label className="input-label">Free Delivery Threshold Amount (₹)</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={thresholdInput}
+                    onChange={(e) => setThresholdInput(e.target.value)}
+                    placeholder="e.g. 200"
+                    required
+                  />
+                </div>
+
+                <button type="submit" className="btn-primary" style={{ padding: '10px' }}>
+                  <Save size={16} />
+                  <span>Save Free Delivery Threshold</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+};
