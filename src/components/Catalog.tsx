@@ -28,17 +28,7 @@ export const HYGIENE_SUBDIVISIONS = [
   'detergents'
 ];
 
-// Top Horizontal Category Icons matching reference screenshot
-const CATEGORY_ICONS = [
-  { id: 'All', label: 'All', icon: '🍺' },
-  { id: 'bakery/biscuits', label: 'Bakery', icon: '🍥' },
-  { id: 'teas/coffees/beverages', label: 'Drinks', icon: '🎧' },
-  { id: 'bath/body', label: 'Beauty', icon: '💄' },
-  { id: 'skin care', label: 'Decor', icon: '🛋️' },
-  { id: 'dairy/bread/eggs', label: 'Kids', icon: '🍼' },
-  { id: 'veg/fruits', label: 'Fresh', icon: '🍎' },
-  { id: 'chips/namkeen', label: 'Snacks', icon: '🍿' }
-];
+
 
 export const Catalog: React.FC = () => {
   const { catalog } = useApp();
@@ -101,203 +91,79 @@ export const Catalog: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Blinkit Category Icon Tabs Row */}
-      <div className="blinkit-category-icons-row">
-        {CATEGORY_ICONS.map((cat) => (
-          <button
-            key={cat.id}
-            type="button"
-            className={`blinkit-category-icon-item ${selectedSubCat === cat.id ? 'active' : ''}`}
-            onClick={() => {
-              if (cat.id === 'bath/body' || cat.id === 'skin care') {
-                setSelectedMainCat('Hygiene');
-              } else {
-                setSelectedMainCat('Food');
-              }
-              setSelectedSubCat(cat.id);
-            }}
-          >
-            <div className="icon-box">{cat.icon}</div>
-            <span className="icon-label">{cat.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* 3. Featured Banners Horizontal Carousel */}
-      <div className="blinkit-banners-carousel">
-        <div className="blinkit-banner-card blue-gradient">
-          <span className="blinkit-banner-tag">Festive Finds</span>
-          <div>
-            <span style={{ fontSize: '11px', opacity: 0.9 }}>CELEBRATE</span>
-            <div className="blinkit-banner-title">sawan</div>
-          </div>
-        </div>
-
-        <div className="blinkit-banner-card sky-gradient">
-          <span className="blinkit-banner-tag" style={{ background: '#f59e0b', color: '#ffffff' }}>NEWLY LAUNCHED</span>
-          <div className="blinkit-banner-title">Essential Combos</div>
-          <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.2)', padding: '2px 6px', borderRadius: '6px', width: 'fit-content' }}>
-            ✦ For You ✦
-          </span>
-        </div>
-
-        <div className="blinkit-banner-card indigo-gradient">
-          <span className="blinkit-banner-tag">Featured</span>
-          <div>
-            <div className="blinkit-banner-title">Midnight Essentials</div>
-            <span style={{ fontSize: '10px', opacity: 0.85 }}>Superfast 8 min delivery</span>
-          </div>
-        </div>
-
-        <div className="blinkit-banner-card cyan-gradient">
-          <span className="blinkit-banner-tag">Fresh</span>
-          <div className="blinkit-banner-title">Ratlam Groceries</div>
-          <span style={{ fontSize: '10px', opacity: 0.85 }}>Direct from Farm</span>
-        </div>
-      </div>
-
-      {/* 4. Frequently bought Section Cards */}
-      <div className="blinkit-section-header">
-        Frequently bought
-      </div>
-
-      <div className="frequently-bought-grid">
-        {/* Card 1: Chocolates & Candies */}
+      {/* 2. Two Large Contrasting Category Theme Cards (SS 3) */}
+      <div className="main-category-dual-cards">
+        {/* Card 1: Food Store */}
         <div 
-          className="freq-bought-card"
-          onClick={() => {
-            setSelectedMainCat('Food');
-            setSelectedSubCat('bakery/biscuits');
-          }}
-        >
-          <div className="freq-thumbs-wrapper">
-            <span className="freq-thumb-img" style={{ fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🍫</span>
-            <span className="freq-thumb-img" style={{ fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🍬</span>
-            <span className="freq-more-badge">+7 more</span>
-          </div>
-          <span className="freq-card-label">Chocolates & Candies</span>
-        </div>
-
-        {/* Card 2: Chips & Namkeen */}
-        <div 
-          className="freq-bought-card"
-          onClick={() => {
-            setSelectedMainCat('Food');
-            setSelectedSubCat('chips/namkeen');
-          }}
-        >
-          <div className="freq-thumbs-wrapper">
-            <span className="freq-thumb-img" style={{ fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🍿</span>
-            <span className="freq-thumb-img" style={{ fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🥨</span>
-            <span className="freq-more-badge">+4 more</span>
-          </div>
-          <span className="freq-card-label">Chips & Namkeen</span>
-        </div>
-
-        {/* Card 3: Cakes & Biscuits */}
-        <div 
-          className="freq-bought-card"
-          onClick={() => {
-            setSelectedMainCat('Food');
-            setSelectedSubCat('bakery/biscuits');
-          }}
-        >
-          <div className="freq-thumbs-wrapper">
-            <span className="freq-thumb-img" style={{ fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🍰</span>
-            <span className="freq-thumb-img" style={{ fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🍪</span>
-            <span className="freq-more-badge">+6 more</span>
-          </div>
-          <span className="freq-card-label">Cakes & Biscuits</span>
-        </div>
-      </div>
-
-      {/* See All Products Callout */}
-      <button 
-        type="button" 
-        className="see-all-products-banner"
-        onClick={() => {
-          setSelectedMainCat('Food');
-          setSelectedSubCat('All');
-        }}
-      >
-        <span style={{ fontSize: '14px' }}>🍫 🍿 🍰</span>
-        <span>See all products</span>
-        <ChevronRight size={14} color="#1d4ed8" />
-      </button>
-
-      {/* 5. Main Category Segmented Bar & Sub-Category Carousel */}
-      <div className="category-segmented-bar" style={{ margin: '8px 16px' }}>
-        <button
-          type="button"
-          className={`segment-tab ${selectedMainCat === 'Food' ? 'active' : ''}`}
+          className={`category-theme-card food-card ${selectedMainCat === 'Food' ? 'selected' : ''}`}
           onClick={() => {
             setSelectedMainCat('Food');
             setSelectedSubCat('All');
           }}
         >
-          <span>🍎</span>
-          <span>Food Store</span>
-        </button>
+          <div className="card-badge">Main Category</div>
+          <div className="card-content-left">
+            <span className="card-emoji">🍎 🍞 🥦</span>
+            <h2 className="card-title">Food Store</h2>
+            <p className="card-subtitle">Fresh Groceries, Fruits, Dairy & Staples</p>
+          </div>
+          <div className="card-action-btn">
+            <span>Shop Food</span>
+            <ChevronRight size={16} />
+          </div>
+        </div>
 
-        <button
-          type="button"
-          className={`segment-tab ${selectedMainCat === 'Hygiene' ? 'active' : ''}`}
+        {/* Card 2: Hygiene & Personal Care */}
+        <div 
+          className={`category-theme-card hygiene-card ${selectedMainCat === 'Hygiene' ? 'selected' : ''}`}
           onClick={() => {
             setSelectedMainCat('Hygiene');
             setSelectedSubCat('All');
           }}
         >
-          <span>🧼</span>
-          <span>Hygiene & Care</span>
-        </button>
+          <div className="card-badge teal-badge">Personal Care</div>
+          <div className="card-content-left">
+            <span className="card-emoji">🧼 🧴 🪥</span>
+            <h2 className="card-title">Hygiene & Care</h2>
+            <p className="card-subtitle">Bath, Body, Skincare & Cleaning</p>
+          </div>
+          <div className="card-action-btn teal-btn">
+            <span>Shop Care</span>
+            <ChevronRight size={16} />
+          </div>
+        </div>
       </div>
 
-      {/* Filter Row (Count & Veg Pill) */}
+      {/* 3. Sub-Category Chips Carousel */}
+      <div className="subcategory-scroll-row">
+        {activeSubdivisions.map((sub) => (
+          <button
+            key={sub}
+            type="button"
+            className={`subcat-chip ${selectedSubCat === sub ? 'active' : ''}`}
+            onClick={() => setSelectedSubCat(sub)}
+          >
+            {sub}
+          </button>
+        ))}
+      </div>
+
+      {/* Filter Row (Count & Veg Filter Pill) */}
       <div className="filter-sticky-row">
         <span style={{ fontSize: '13px', fontWeight: 900, color: '#0f172a' }}>
           {selectedSubCat === 'All' ? `${selectedMainCat} Specials` : selectedSubCat} ({filteredProducts.length})
         </span>
 
-        <div className="dietary-pills-group">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
             type="button"
-            className={`dietary-pill ${dietaryFilter === 'all' ? 'active all' : ''}`}
-            onClick={() => setDietaryFilter('all')}
+            className={`veg-filter-pill ${dietaryFilter === 'veg' ? 'active-veg' : ''}`}
+            onClick={() => setDietaryFilter(dietaryFilter === 'veg' ? 'all' : 'veg')}
           >
-            All
-          </button>
-
-          <button
-            type="button"
-            className={`dietary-pill ${dietaryFilter === 'veg' ? 'active veg' : ''}`}
-            onClick={() => setDietaryFilter('veg')}
-          >
-            <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--veg-color)' }} />
-            Veg
-          </button>
-
-          <button
-            type="button"
-            className={`dietary-pill ${dietaryFilter === 'non-veg' ? 'active non-veg' : ''}`}
-            onClick={() => setDietaryFilter('non-veg')}
-          >
-            <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--non-veg-color)' }} />
-            Non-Veg
+            <span className="veg-dot" />
+            <span>Veg Only</span>
           </button>
         </div>
-      </div>
-
-      {/* Subcategory Pills Horizontal Carousel */}
-      <div className="subcategories-carousel">
-        {activeSubdivisions.map(subCat => (
-          <button
-            key={subCat}
-            className={`subcategory-pill ${selectedSubCat === subCat ? 'active' : ''}`}
-            onClick={() => setSelectedSubCat(subCat)}
-          >
-            {subCat === 'All' ? '✨ All Categories' : subCat}
-          </button>
-        ))}
       </div>
 
       {/* 6. Product Cards Grid */}

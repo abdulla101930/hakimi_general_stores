@@ -5,7 +5,6 @@ import {
   Trash2, 
   Plus, 
   Minus, 
-  MapPin, 
   Tag, 
   Check, 
   ShoppingBag,
@@ -142,7 +141,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
 
   return (
     <div className="cart-page-container">
-      {/* 1. Full Top Header Bar */}
+      {/* 1. Top Navigation Bar */}
       <div className="cart-page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button 
@@ -170,98 +169,103 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
         </button>
       </div>
 
-      {/* Free Delivery Bar */}
-      {!isFreeDelivery && (
-        <div className="cart-free-shipping-bar">
-          <span>🚚 Add <strong>₹{freeDeliveryThreshold - itemsTotal}</strong> more for FREE Delivery!</span>
-        </div>
-      )}
-
-      {/* 2. Main Content Grid Layout */}
+      {/* 2. Main Content 2-Column Grid */}
       <div className="cart-content-grid">
-        {/* Left Column - Product Items & Options */}
+        {/* Left Column: Cart Items (SS 5) & Coupons */}
         <div className="cart-left-col">
-          {/* Cart Product Items */}
+          
+          {/* Free Delivery Banner matching SS 6 Top Card */}
+          <div className="free-delivery-top-card">
+            <div className="free-del-main-row">
+              <div className="scooter-icon-box">
+                🛵
+              </div>
+              <div className="free-del-text-col">
+                <span className="free-del-title">
+                  {isFreeDelivery ? '🎉 You unlocked FREE delivery!' : 'Get FREE delivery'}
+                </span>
+                <span className="free-del-subtext">
+                  {!isFreeDelivery 
+                    ? `Add products worth ₹${freeDeliveryThreshold - itemsTotal} more ›`
+                    : 'Your order qualifies for zero delivery fees!'}
+                </span>
+                {/* Progress Bar */}
+                <div className="del-progress-track">
+                  <div 
+                    className="del-progress-fill" 
+                    style={{ width: `${Math.min(100, (itemsTotal / freeDeliveryThreshold) * 100)}%` }} 
+                  />
+                </div>
+              </div>
+            </div>
+            <button 
+              type="button" 
+              className="see-coupons-link"
+              onClick={() => {
+                const el = document.getElementById('coupon-section');
+                el?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              <span>See all coupons</span>
+              <ChevronRight size={14} />
+            </button>
+          </div>
+
+          {/* Cart Product Items (SS 5) */}
           <div className="cart-section-box">
-            <h2 className="cart-section-title">Items in Cart</h2>
+            <h2 className="cart-section-title">Items in Cart ({totalItems})</h2>
             <div className="cart-items-list">
               {cartItems.map(({ product, qty }) => (
-                <div key={product.id} className="cart-item-row">
-                  {/* Image */}
-                  <div className="cart-item-img-box">
+                <div key={product.id} className="cart-item-row-ss5">
+                  {/* Thumbnail Image */}
+                  <div className="cart-item-thumb">
                     {product.image.startsWith('http') || product.image.startsWith('/') ? (
                       <img src={product.image} alt={product.name} />
                     ) : (
-                      <span style={{ fontSize: '28px' }}>{product.image}</span>
+                      <span style={{ fontSize: '32px' }}>{product.image}</span>
                     )}
                   </div>
 
-                  {/* Details */}
-                  <div className="cart-item-info">
-                    <h3 className="cart-item-name">{product.name}</h3>
-                    <span className="cart-item-weight">{product.weight}</span>
-                    <div className="cart-item-price-tag">
+                  {/* Product Details */}
+                  <div className="cart-item-details-col">
+                    <h3 className="cart-item-title">{product.name}</h3>
+                    <span className="cart-item-unit">{product.weight}</span>
+                    <div className="cart-item-prices">
                       <span className="current-price">₹{product.price}</span>
-                      {product.originalPrice && (
-                        <span className="original-price">₹{product.originalPrice}</span>
+                      {product.originalPrice && product.originalPrice > product.price && (
+                        <span className="strike-price">₹{product.originalPrice}</span>
                       )}
                     </div>
                   </div>
 
-                  {/* Quantity Stepper & Total */}
-                  <div className="cart-item-action-col">
-                    <span className="item-subtotal">₹{product.price * qty}</span>
-                    <div className="cart-qty-stepper">
+                  {/* Quantity Stepper Control (SS 5) */}
+                  <div className="cart-item-stepper-wrapper">
+                    <div className="ss5-qty-stepper">
                       <button 
                         type="button"
                         onClick={() => removeFromCart(product.id)}
+                        aria-label="Decrease quantity"
                       >
-                        <Minus size={12} strokeWidth={3} />
+                        <Minus size={13} strokeWidth={3} />
                       </button>
-                      <span>{qty}</span>
+                      <span className="stepper-val">{qty}</span>
                       <button 
                         type="button"
                         onClick={() => addToCart(product.id)}
+                        aria-label="Increase quantity"
                       >
-                        <Plus size={12} strokeWidth={3} />
+                        <Plus size={13} strokeWidth={3} />
                       </button>
                     </div>
+                    <span className="cart-item-total-price">₹{product.price * qty}</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Delivery Instructions */}
-          <div className="cart-section-box">
-            <h2 className="cart-section-title">Delivery Instructions</h2>
-            <div className="instructions-grid">
-              {[
-                { label: 'Avoid calling', icon: PhoneOff },
-                { label: "Don't ring bell", icon: BellOff },
-                { label: 'Leave with guard', icon: Shield },
-                { label: 'Record voice', icon: Mic }
-              ].map((inst) => {
-                const Icon = inst.icon;
-                const isSelected = selectedInstruction === inst.label;
-                return (
-                  <button
-                    key={inst.label}
-                    type="button"
-                    className={`instruction-card ${isSelected ? 'active' : ''}`}
-                    onClick={() => setSelectedInstruction(inst.label)}
-                  >
-                    <Icon size={18} color={isSelected ? '#2563eb' : '#64748b'} />
-                    <span>{inst.label}</span>
-                    {isSelected && <Check size={14} className="check-mark" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Coupons Section */}
-          <div className="cart-section-box">
+          {/* Coupons & Offers */}
+          <div id="coupon-section" className="cart-section-box">
             <h2 className="cart-section-title">Coupons & Offers</h2>
             {appliedCoupon ? (
               <div className="applied-coupon-banner">
@@ -277,7 +281,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
               </div>
             ) : (
               <form onSubmit={handleApplyCoupon} className="coupon-input-form">
-                <Tag size={16} color="#64748b" />
+                <Tag size={16} color="#2563eb" />
                 <input
                   type="text"
                   placeholder="Enter Coupon Code (e.g. WELCOME50)"
@@ -290,75 +294,133 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
           </div>
         </div>
 
-        {/* Right Column - Address & Bill Summary */}
+        {/* Right Column: Bill Details (SS 6), Delivery Instructions & Address */}
         <div className="cart-right-col">
-          {/* Delivering To Address Card */}
-          <div className="cart-section-box">
-            <div className="address-header-row">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin size={18} color="#2563eb" />
-                <h2 className="cart-section-title" style={{ margin: 0 }}>Delivering To</h2>
+
+          {/* Bill Details Card (SS 6) */}
+          <div className="cart-section-box bill-details-box">
+            <h2 className="cart-section-title" style={{ fontSize: '18px' }}>Bill details</h2>
+            
+            <div className="bill-detail-line">
+              <div className="line-label">
+                <span className="line-icon">📄</span>
+                <span>Items total</span>
               </div>
-              <button type="button" onClick={onOpenMap} className="btn-map-pin">
-                Drop Map Pin
-              </button>
+              <span className="line-val">₹{itemsTotal}</span>
             </div>
 
-            <div className="selected-address-card">
-              {selectedAddress ? (
-                <div>
-                  <span className="address-type-tag">{selectedAddress.type}</span>
-                  <p className="address-details-text">{selectedAddress.details}</p>
-                </div>
-              ) : (
-                <p className="address-details-text" style={{ color: '#ef4444' }}>
-                  No delivery address selected yet.
-                </p>
-              )}
+            <div className="bill-detail-line">
+              <div className="line-label">
+                <span className="line-icon">🚚</span>
+                <span>Delivery charge</span>
+              </div>
+              <span className="line-val">
+                {deliveryCharge === 0 ? <span className="free-green-badge">FREE</span> : `₹${deliveryCharge}`}
+              </span>
+            </div>
 
-              <button 
-                type="button" 
-                className="btn-add-new-address"
-                onClick={() => setLoginOpen(true)}
-              >
-                + Add / Change Address
-              </button>
+            <div className="bill-detail-line">
+              <div className="line-label">
+                <span className="line-icon">🛍️</span>
+                <span>Handling charge</span>
+              </div>
+              <span className="line-val free-green-badge">FREE</span>
+            </div>
+
+            {itemsTotal < 99 && (
+              <div className="bill-detail-line small-cart-row">
+                <div>
+                  <div className="line-label">
+                    <span className="line-icon">🛒</span>
+                    <span>Small cart charge</span>
+                  </div>
+                  <span className="small-cart-subtext">No small cart charge on orders above ₹99</span>
+                </div>
+                <span className="line-val">₹15</span>
+              </div>
+            )}
+
+            {discountAmount > 0 && (
+              <div className="bill-detail-line discount-line">
+                <div className="line-label">
+                  <span className="line-icon">🎟️</span>
+                  <span>Coupon Discount</span>
+                </div>
+                <span className="line-val discount-val">-₹{discountAmount}</span>
+              </div>
+            )}
+
+            <div className="bill-divider-line" />
+
+            <div className="bill-detail-line grand-total-line">
+              <span className="grand-total-label">Grand total</span>
+              <span className="grand-total-val">₹{grandTotal + (itemsTotal < 99 ? 15 : 0)}</span>
             </div>
           </div>
 
-          {/* Bill Summary */}
+          {/* Add GSTIN Banner (SS 6) */}
+          <div className="gstin-card-banner">
+            <div className="gstin-icon-box">%</div>
+            <div className="gstin-text-col">
+              <span className="gstin-title">Add GSTIN</span>
+              <span className="gstin-subtext">Claim GST input credit up to 18% on your order</span>
+            </div>
+            <ChevronRight size={18} color="#64748b" />
+          </div>
+
+          {/* Delivery Instructions (SS 6) */}
           <div className="cart-section-box">
-            <h2 className="cart-section-title">Bill Summary</h2>
-            <div className="bill-rows-group">
-              <div className="bill-row">
-                <span>Item Total</span>
-                <span>₹{itemsTotal}</span>
+            <h2 className="cart-section-title">Delivery instructions</h2>
+            <div className="instructions-horizontal-grid">
+              {[
+                { id: 'record', label: 'Record voice', sub: 'Press here and hold', icon: Mic },
+                { id: 'door', label: 'Leave at door', sub: 'Ring bell & drop', icon: BellOff },
+                { id: 'guard', label: 'Leave with guard', sub: 'Security gate', icon: Shield },
+                { id: 'call', label: 'Avoid calling', sub: 'Silent delivery', icon: PhoneOff }
+              ].map((inst) => {
+                const Icon = inst.icon;
+                const isSelected = selectedInstruction === inst.label;
+                return (
+                  <button
+                    key={inst.id}
+                    type="button"
+                    className={`inst-card-box ${isSelected ? 'active' : ''}`}
+                    onClick={() => setSelectedInstruction(inst.label)}
+                  >
+                    <div className="inst-top-row">
+                      <Icon size={18} color={isSelected ? '#2563eb' : '#64748b'} />
+                      {isSelected && <Check size={14} className="inst-check" />}
+                    </div>
+                    <span className="inst-label-title">{inst.label}</span>
+                    <span className="inst-subtext">{inst.sub}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Delivering to Bar (SS 6 Bottom Sticky Style) */}
+          <div className="delivering-to-bar">
+            <div className="del-to-left">
+              <div className="house-icon-box">
+                🏠
               </div>
-              
-              <div className="bill-row">
-                <span>Handling Charge</span>
-                <span className="free-badge">FREE</span>
-              </div>
-
-              <div className="bill-row">
-                <span>Delivery Partner Fee</span>
-                <span>{deliveryCharge === 0 ? <span className="free-badge">FREE</span> : `₹${deliveryCharge}`}</span>
-              </div>
-
-              {discountAmount > 0 && (
-                <div className="bill-row discount">
-                  <span>Coupon Discount</span>
-                  <span>-₹{discountAmount}</span>
-                </div>
-              )}
-
-              <div className="bill-divider" />
-
-              <div className="bill-row grand-total">
-                <span>To Pay</span>
-                <span className="total-val">₹{grandTotal}</span>
+              <div className="del-to-text">
+                <span className="del-to-title">
+                  Delivering to <strong>{selectedAddress ? selectedAddress.type : 'Home'}</strong>
+                </span>
+                <span className="del-to-address-line">
+                  {selectedAddress ? selectedAddress.details : 'Select your delivery address...'}
+                </span>
               </div>
             </div>
+            <button 
+              type="button" 
+              className="btn-change-address"
+              onClick={onOpenMap}
+            >
+              {selectedAddress ? 'Change' : 'Add Address'}
+            </button>
           </div>
 
           {/* Checkout Button Bar */}
@@ -369,7 +431,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
               onClick={handleCheckout}
             >
               <div className="checkout-btn-left">
-                <span className="pay-total-val">₹{grandTotal}</span>
+                <span className="pay-total-val">₹{grandTotal + (itemsTotal < 99 ? 15 : 0)}</span>
                 <span className="pay-subtitle">TOTAL TO PAY</span>
               </div>
               <div className="checkout-btn-right">
@@ -378,6 +440,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
               </div>
             </button>
           </div>
+
         </div>
       </div>
     </div>

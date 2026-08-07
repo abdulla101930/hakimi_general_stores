@@ -1914,3 +1914,559 @@ html, body {
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
 }
 
+/* ==========================================================================
+   3-Tab Magic Navigation & SS 3 Category Cards & SS 5/6 Cart UI Styling
+   ========================================================================== */
+
+/* Three tab navbar container overrides */
+.magic-navigation.three-tabs {
+  width: 270px;
+}
+
+.magic-navigation.three-tabs ul {
+  width: 270px;
+}
+
+.magic-navigation.three-tabs .magic-list-item {
+  width: 90px;
+}
+
+/* SS 3: Two Contrasting Main Category Theme Cards */
+.main-category-dual-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+@media (max-width: 480px) {
+  .main-category-dual-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.category-theme-card {
+  position: relative;
+  border-radius: 18px;
+  padding: 16px;
+  color: #ffffff;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 125px;
+}
+
+.category-theme-card:hover {
+  transform: translateY(-2px);
+}
+
+.category-theme-card.food-card {
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+  border: 2px solid transparent;
+}
+.category-theme-card.food-card.selected {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3), 0 10px 25px rgba(37, 99, 235, 0.35);
+}
+
+.category-theme-card.hygiene-card {
+  background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.25);
+  border: 2px solid transparent;
+}
+.category-theme-card.hygiene-card.selected {
+  border-color: #2dd4bf;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.3), 0 10px 25px rgba(13, 148, 136, 0.35);
+}
+
+.card-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.card-emoji {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.card-title {
+  font-size: 17px;
+  font-weight: 900;
+  margin: 0 0 2px;
+  color: #ffffff;
+}
+
+.card-subtitle {
+  font-size: 11px;
+  opacity: 0.9;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.card-action-btn {
+  margin-top: 12px;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+}
+
+/* Sub-category chips row */
+.subcategory-scroll-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 16px 12px;
+  scrollbar-width: none;
+}
+.subcategory-scroll-row::-webkit-scrollbar {
+  display: none;
+}
+
+.subcat-chip {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.subcat-chip.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+/* SS 6: Free Delivery Top Banner */
+.free-delivery-top-card {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+  border-radius: 16px;
+  padding: 14px 16px;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 6px 18px rgba(30, 58, 138, 0.2);
+}
+
+.free-del-main-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scooter-icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.free-del-text-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.free-del-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.free-del-subtext {
+  font-size: 11px;
+  opacity: 0.9;
+  color: #dbeafe;
+}
+
+.del-progress-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.del-progress-fill {
+  height: 100%;
+  background: #60a5fa;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.see-coupons-link {
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+/* SS 5 Cart Item Row Styling */
+.cart-item-row-ss5 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.cart-item-row-ss5:last-child {
+  border-bottom: none;
+}
+
+.cart-item-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.cart-item-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cart-item-details-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cart-item-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.cart-item-unit {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.cart-item-prices {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.cart-item-prices .current-price {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.cart-item-prices .strike-price {
+  font-size: 11px;
+  color: #94a3b8;
+  text-decoration: line-through;
+}
+
+.cart-item-stepper-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.ss5-qty-stepper {
+  display: flex;
+  align-items: center;
+  background: #eff6ff;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ss5-qty-stepper button {
+  background: transparent;
+  border: none;
+  color: #2563eb;
+  padding: 6px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+.ss5-qty-stepper button:hover {
+  background: #dbeafe;
+}
+
+.ss5-qty-stepper .stepper-val {
+  font-size: 12px;
+  font-weight: 900;
+  color: #2563eb;
+  padding: 0 6px;
+}
+
+.cart-item-total-price {
+  font-size: 12px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+/* SS 6 Bill Details Cards */
+.bill-details-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+}
+
+.bill-detail-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 13px;
+  color: #334155;
+}
+
+.line-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.line-icon {
+  font-size: 14px;
+}
+
+.line-val {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.free-green-badge {
+  color: #16a34a;
+  background: #dcfce7;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.small-cart-subtext {
+  font-size: 10px;
+  color: #f97316;
+  display: block;
+  margin-left: 22px;
+}
+
+.bill-divider-line {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 10px 0;
+}
+
+.grand-total-line {
+  padding-top: 4px;
+}
+
+.grand-total-label {
+  font-size: 15px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.grand-total-val {
+  font-size: 18px;
+  font-weight: 900;
+  color: #2563eb;
+}
+
+/* SS 6 GSTIN Banner */
+.gstin-card-banner {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.gstin-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.gstin-text-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.gstin-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.gstin-subtext {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* SS 6 Delivery Instructions Cards */
+.instructions-horizontal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.inst-card-box {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.inst-card-box.active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+.inst-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.inst-label-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.inst-subtext {
+  font-size: 10px;
+  color: #64748b;
+}
+
+/* SS 6 Delivering To Sticky Bar */
+.delivering-to-bar {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.del-to-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.house-icon-box {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #fef3c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.del-to-text {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.del-to-title {
+  font-size: 12px;
+  color: #0f172a;
+}
+
+.del-to-address-line {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-change-address {
+  background: transparent;
+  border: none;
+  color: #16a34a;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+

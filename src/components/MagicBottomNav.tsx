@@ -1,66 +1,44 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Home, User, ShoppingBag, Package, ShieldCheck } from 'lucide-react';
+import { Home, ShoppingBag, Package } from 'lucide-react';
 
 interface MagicBottomNavProps {
   onOpenPWA?: () => void;
 }
 
 export const MagicBottomNav: React.FC<MagicBottomNavProps> = () => {
-  const { currentView, setView, user, role, setLoginOpen, logout, cart } = useApp();
+  const { currentView, setView, isLoginOpen, cart } = useApp();
 
   const totalItems = Object.values(cart).reduce((sum, count) => sum + count, 0);
 
-  // Tab definitions
+  // If login modal is open, hide the bottom navbar so it never overlaps the OTP box
+  if (isLoginOpen) return null;
+
+  // 3 Menus only: Home, Cart, Previous Orders
   const tabs = [
     { id: 'catalog', label: 'Home', icon: Home },
-    { 
-      id: 'profile', 
-      label: user ? (role === 'owner' ? 'Owner' : 'Profile') : 'Login', 
-      icon: User 
-    },
     { id: 'cart', label: 'Cart', icon: ShoppingBag, badge: totalItems },
-    { id: 'tracking', label: 'Orders', icon: Package },
-    { id: 'admin', label: role === 'owner' ? 'Admin' : 'Owner', icon: ShieldCheck }
+    { id: 'tracking', label: 'Previous Orders', icon: Package }
   ];
 
   // Determine active index for sliding indicator cutout
   const getActiveIndex = (): number => {
     if (currentView === 'catalog') return 0;
-    if (currentView === 'cart') return 2;
-    if (currentView === 'tracking') return 3;
-    if (currentView === 'admin') return 4;
+    if (currentView === 'cart') return 1;
+    if (currentView === 'tracking') return 2;
     return 0;
   };
 
   const activeIndex = getActiveIndex();
 
   const handleTabClick = (tabId: string) => {
-    if (tabId === 'profile') {
-      if (user) {
-        if (role === 'owner') {
-          setView(currentView === 'admin' ? 'catalog' : 'admin');
-        } else {
-          logout();
-        }
-      } else {
-        setLoginOpen(true);
-      }
-    } else if (tabId === 'admin') {
-      if (role === 'owner') {
-        setView(currentView === 'admin' ? 'catalog' : 'admin');
-      } else {
-        setLoginOpen(true);
-      }
-    } else {
-      setView(tabId as any);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    setView(tabId as any);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
     <div className="magic-nav-wrapper">
-      <nav className="magic-navigation">
+      <nav className="magic-navigation three-tabs">
         <ul>
           {tabs.map((tab, idx) => {
             const Icon = tab.icon;
@@ -85,17 +63,16 @@ export const MagicBottomNav: React.FC<MagicBottomNavProps> = () => {
             );
           })}
 
-          {/* Smooth Curved Floating Circle Indicator */}
+          {/* Smooth Curved Floating Circle Indicator for 3 tabs (90px spacing) */}
           <div 
             className="magic-indicator"
             style={{
-              transform: `translateX(${activeIndex * 70}px)`
+              transform: `translateX(${activeIndex * 90}px)`
             }}
           >
             <div className="indicator-circle">
               {activeIndex === 0 && <Home size={22} color="#ffffff" strokeWidth={2.5} />}
-              {activeIndex === 1 && <User size={22} color="#ffffff" strokeWidth={2.5} />}
-              {activeIndex === 2 && (
+              {activeIndex === 1 && (
                 <div style={{ position: 'relative' }}>
                   <ShoppingBag size={22} color="#ffffff" strokeWidth={2.5} />
                   {totalItems > 0 && (
@@ -103,8 +80,7 @@ export const MagicBottomNav: React.FC<MagicBottomNavProps> = () => {
                   )}
                 </div>
               )}
-              {activeIndex === 3 && <Package size={22} color="#ffffff" strokeWidth={2.5} />}
-              {activeIndex === 4 && <ShieldCheck size={22} color="#ffffff" strokeWidth={2.5} />}
+              {activeIndex === 2 && <Package size={22} color="#ffffff" strokeWidth={2.5} />}
             </div>
           </div>
         </ul>
