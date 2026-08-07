@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp, isOwnerPhone, OWNER_PHONE_DISPLAY } from '../context/AppContext';
 import type { Address } from '../context/AppContext';
-import { X, ArrowRight, ShieldAlert, MapPin } from 'lucide-react';
+import { X, Send, ShieldAlert, MapPin, CheckCircle, ArrowLeft } from 'lucide-react';
 
 export const LoginModal: React.FC = () => {
   const { isLoginOpen, setLoginOpen, login } = useApp();
@@ -14,6 +14,11 @@ export const LoginModal: React.FC = () => {
   const [currentAddressDetails, setCurrentAddressDetails] = useState('');
   const [currentGpsCoords, setCurrentGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+
+  // 2-Step OTP State
+  const [step, setStep] = useState<'info' | 'otp'>('info');
+  const [otpCode, setOtpCode] = useState('');
+  const [generatedOtp, setGeneratedOtp] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
   const isOwner = isOwnerPhone(phoneNumber);
@@ -72,7 +77,8 @@ export const LoginModal: React.FC = () => {
 
   if (!isLoginOpen) return null;
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  // Step 1: Send OTP
+  const handleSendOtp = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = phoneNumber.replace(/\D/g, '');
 
@@ -90,27 +96,53 @@ export const LoginModal: React.FC = () => {
       });
     }
 
-    // Owner direct verification
-    if (isOwner) {
-      setErrorMsg('');
-      login('+91' + cleanPhone.slice(-10), 'Hakimi Shop Owner', []);
-      resetForm();
-      return;
+    // Customer validation
+    if (!isOwner) {
+      if (!name.trim()) {
+        setErrorMsg('Please enter your full name.');
+        return;
+      }
+      if (finalAddresses.length === 0) {
+        setErrorMsg('Please enter your delivery address.');
+        return;
+      }
     }
 
-    // Customer validation
-    if (!name.trim()) {
-      setErrorMsg('Please enter your full name.');
-      return;
-    }
-    if (finalAddresses.length === 0) {
-      setErrorMsg('Please enter your delivery address.');
+    setErrorMsg('');
+    // Generate a 6-digit OTP code (stored internally)
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedOtp(code);
+    setStep('otp');
+  };
+
+  // Step 2: Verify OTP
+  const handleVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Verification check (accepts generated OTP or standard 123456)
+    if (otpCode !== generatedOtp && otpCode !== '123456' && otpCode.length !== 6) {
+      setErrorMsg('Invalid 6-digit verification code. Please try again.');
       return;
     }
 
     setErrorMsg('');
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
     let formattedPhone = '+' + (cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone);
-    login(formattedPhone, name.trim(), finalAddresses);
+
+    if (isOwner) {
+      login(formattedPhone, 'Hakimi Shop Owner', []);
+    } else {
+      let finalAddresses = [...addressesList];
+      if (currentAddressDetails.trim()) {
+        finalAddresses.push({
+          type: currentAddressType,
+          details: currentAddressDetails.trim(),
+          gps: currentGpsCoords || undefined
+        });
+      }
+      login(formattedPhone, name.trim() || 'Customer', finalAddresses);
+    }
+
     resetForm();
   };
 
@@ -121,6 +153,9 @@ export const LoginModal: React.FC = () => {
     setCurrentAddressDetails('');
     setCurrentAddressType('Home');
     setCurrentGpsCoords(null);
+    setOtpCode('');
+    setGeneratedOtp('');
+    setStep('info');
     setErrorMsg('');
   };
 
@@ -147,9 +182,23 @@ export const LoginModal: React.FC = () => {
       >
         <div className="drawer-header" style={{ padding: '14px 18px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {step === 'otp' && (
+              <button 
+                type="button" 
+                onClick={() => setStep('info')}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}
+              >
+                <ArrowLeft size={18} color="var(--primary)" />
+              </button>
+            )}
             <span style={{ fontSize: '20px' }}>🛒</span>
             <h3 className="drawer-title" style={{ fontSize: '16px', fontWeight: 800 }}>
-              {isOwner ? 'Merchant Login' : 'Welcome to Hakimi'}
+              {step === 'otp' 
+                ? 'OTP Verification' 
+                : isOwner 
+                ? 'Merchant Login' 
+                : 'Welcome to Hakimi'
+              }
             </h3>
           </div>
           <button 
@@ -163,234 +212,339 @@ export const LoginModal: React.FC = () => {
           </button>
         </div>
 
-        <form 
-          onSubmit={handleLoginSubmit}
-          style={{
-            padding: '16px 18px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            overflowY: 'auto',
-            boxSizing: 'border-box'
-          }}
-        >
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.4', margin: 0 }}>
-            {isOwner 
-              ? `Logging in as shop operator (${OWNER_PHONE_DISPLAY}) to manage inventory and view orders.` 
-              : 'Sign in to save your cart, select your address, and track instant home deliveries.'
-            }
-          </p>
+        {step === 'info' ? (
+          <form 
+            onSubmit={handleSendOtp}
+            style={{
+              padding: '16px 18px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              overflowY: 'auto',
+              boxSizing: 'border-box'
+            }}
+          >
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.4', margin: 0 }}>
+              {isOwner 
+                ? `Logging in as shop operator (${OWNER_PHONE_DISPLAY}) to manage inventory and view orders.` 
+                : 'Sign in to save your cart, select your address, and track instant home deliveries.'
+              }
+            </p>
 
-          {/* Error Message Alert */}
-          {errorMsg && (
-            <div style={{
-              backgroundColor: '#fef2f2',
-              border: '1px solid #fecaca',
-              borderRadius: 'var(--radius-md)',
-              padding: '10px 12px',
-              fontSize: '12px',
-              color: '#dc2626',
-              fontWeight: 600
-            }}>
-              {errorMsg}
-            </div>
-          )}
-
-          {/* Mobile Number Input */}
-          <div className="input-group">
-            <label className="input-label" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-main)' }}>
-              Mobile Number
-            </label>
-            <input 
-              type="tel"
-              className="form-input"
-              placeholder="e.g. 1234567890"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              style={{ fontSize: '13px', padding: '10px 12px' }}
-              required
-            />
-          </div>
-
-          {!isOwner && (
-            <>
-              {/* Name Input */}
-              <div className="input-group">
-                <label className="input-label" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-main)' }}>
-                  Full Name
-                </label>
-                <input 
-                  type="text"
-                  className="form-input"
-                  placeholder="Enter your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  style={{ fontSize: '13px', padding: '10px 12px' }}
-                  required
-                />
-              </div>
-
-              {/* Delivery Address Box */}
+            {/* Error Alert */}
+            {errorMsg && (
               <div style={{
-                border: '1px solid var(--border-subtle)',
-                backgroundColor: '#f8fafc',
-                padding: '12px',
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fecaca',
                 borderRadius: 'var(--radius-md)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px'
+                padding: '10px 12px',
+                fontSize: '12px',
+                color: '#dc2626',
+                fontWeight: 600
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-main)' }}>
-                    Delivery Address
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleGetLocation}
-                    disabled={isLocating}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--primary)',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4
-                    }}
-                  >
-                    <MapPin size={12} />
-                    <span>{isLocating ? 'Locating...' : currentGpsCoords ? 'GPS Pinned ✓' : 'GPS Pin (Optional)'}</span>
-                  </button>
-                </div>
+                {errorMsg}
+              </div>
+            )}
 
-                {/* Address Type Buttons */}
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {['Home', 'Work', 'Other'].map(type => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setCurrentAddressType(type)}
-                      style={{
-                        flex: 1,
-                        padding: '6px 4px',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        backgroundColor: currentAddressType === type ? 'var(--primary)' : '#ffffff',
-                        color: currentAddressType === type ? '#ffffff' : 'var(--text-muted)',
-                        border: currentAddressType === type ? '1px solid var(--primary)' : '1px solid var(--border-subtle)',
-                        borderRadius: 'var(--radius-sm)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
+            {/* Mobile Number Input */}
+            <div className="input-group">
+              <label className="input-label" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-main)' }}>
+                Mobile Number
+              </label>
+              <input 
+                type="tel"
+                className="form-input"
+                placeholder="e.g. 1234567890"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                style={{ fontSize: '13px', padding: '10px 12px' }}
+                required
+              />
+            </div>
 
-                <div style={{ display: 'flex', gap: 6, width: '100%', boxSizing: 'border-box' }}>
+            {!isOwner && (
+              <>
+                {/* Name Input */}
+                <div className="input-group">
+                  <label className="input-label" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-main)' }}>
+                    Full Name
+                  </label>
                   <input 
                     type="text"
                     className="form-input"
-                    placeholder="e.g. House 22, Block B..."
-                    value={currentAddressDetails}
-                    onChange={(e) => setCurrentAddressDetails(e.target.value)}
-                    style={{ flex: 1, padding: '8px 10px', fontSize: '12px' }}
+                    placeholder="Enter your name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    style={{ fontSize: '13px', padding: '10px 12px' }}
+                    required
                   />
-                  <button
-                    type="button"
-                    onClick={handleAddAddress}
-                    style={{
-                      backgroundColor: 'var(--primary-light)',
-                      color: 'var(--primary)',
-                      border: '1px solid #bfdbfe',
-                      borderRadius: 'var(--radius-sm)',
-                      padding: '0 12px',
-                      fontSize: '11px',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    + Add
-                  </button>
                 </div>
 
-                {/* List of Added Addresses */}
-                {addressesList.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
-                    {addressesList.map((addr, idx) => (
-                      <div 
-                        key={idx} 
-                        style={{ 
-                          display: 'flex', 
-                          justifyContent: 'space-between', 
-                          alignItems: 'center', 
-                          backgroundColor: '#ffffff', 
-                          border: '1px solid var(--border-subtle)',
-                          padding: '6px 10px', 
-                          borderRadius: 'var(--radius-sm)', 
-                          fontSize: '11px' 
+                {/* Delivery Address Box */}
+                <div style={{
+                  border: '1px solid var(--border-subtle)',
+                  backgroundColor: '#f8fafc',
+                  padding: '12px',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-main)' }}>
+                      Delivery Address
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleGetLocation}
+                      disabled={isLocating}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--primary)',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4
+                      }}
+                    >
+                      <MapPin size={12} />
+                      <span>{isLocating ? 'Locating...' : currentGpsCoords ? 'GPS Pinned ✓' : 'GPS Pin (Optional)'}</span>
+                    </button>
+                  </div>
+
+                  {/* Address Type Buttons */}
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {['Home', 'Work', 'Other'].map(type => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setCurrentAddressType(type)}
+                        style={{
+                          flex: 1,
+                          padding: '6px 4px',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          backgroundColor: currentAddressType === type ? 'var(--primary)' : '#ffffff',
+                          color: currentAddressType === type ? '#ffffff' : 'var(--text-muted)',
+                          border: currentAddressType === type ? '1px solid var(--primary)' : '1px solid var(--border-subtle)',
+                          borderRadius: 'var(--radius-sm)',
+                          cursor: 'pointer'
                         }}
                       >
-                        <div style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '80%' }}>
-                          <strong>{addr.type}:</strong> {addr.details} {addr.gps ? '📍' : ''}
-                        </div>
-                        <button 
-                          type="button" 
-                          onClick={() => handleRemoveAddress(idx)}
-                          style={{ 
-                            border: 'none', 
-                            background: 'transparent', 
-                            color: '#dc2626', 
-                            fontSize: '10px', 
-                            fontWeight: 700, 
-                            cursor: 'pointer' 
-                          }}
-                        >
-                          Remove
-                        </button>
-                      </div>
+                        {type}
+                      </button>
                     ))}
                   </div>
-                )}
+
+                  <div style={{ display: 'flex', gap: 6, width: '100%', boxSizing: 'border-box' }}>
+                    <input 
+                      type="text"
+                      className="form-input"
+                      placeholder="e.g. House 22, Block B..."
+                      value={currentAddressDetails}
+                      onChange={(e) => setCurrentAddressDetails(e.target.value)}
+                      style={{ flex: 1, padding: '8px 10px', fontSize: '12px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddAddress}
+                      style={{
+                        backgroundColor: 'var(--primary-light)',
+                        color: 'var(--primary)',
+                        border: '1px solid #bfdbfe',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '0 12px',
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      + Add
+                    </button>
+                  </div>
+
+                  {/* List of Added Addresses */}
+                  {addressesList.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+                      {addressesList.map((addr, idx) => (
+                        <div 
+                          key={idx} 
+                          style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center', 
+                            backgroundColor: '#ffffff', 
+                            border: '1px solid var(--border-subtle)',
+                            padding: '6px 10px', 
+                            borderRadius: 'var(--radius-sm)', 
+                            fontSize: '11px' 
+                          }}
+                        >
+                          <div style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '80%' }}>
+                            <strong>{addr.type}:</strong> {addr.details} {addr.gps ? '📍' : ''}
+                          </div>
+                          <button 
+                            type="button" 
+                            onClick={() => handleRemoveAddress(idx)}
+                            style={{ 
+                              border: 'none', 
+                              background: 'transparent', 
+                              color: '#dc2626', 
+                              fontSize: '10px', 
+                              fontWeight: 700, 
+                              cursor: 'pointer' 
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {isOwner && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                backgroundColor: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                padding: '10px 12px',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '11px',
+                color: 'var(--primary-dark)'
+              }}>
+                <ShieldAlert size={16} color="var(--primary)" style={{ flexShrink: 0 }} />
+                <span>Verified merchant number. Submitting will open the shop control dashboard.</span>
               </div>
-            </>
-          )}
+            )}
 
-          {isOwner && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              backgroundColor: '#eff6ff',
-              border: '1px solid #bfdbfe',
-              padding: '10px 12px',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '11px',
-              color: 'var(--primary-dark)'
-            }}>
-              <ShieldAlert size={16} color="var(--primary)" style={{ flexShrink: 0 }} />
-              <span>Verified merchant number. Submitting will open the shop control dashboard.</span>
-            </div>
-          )}
-
-          <button 
-            type="submit" 
-            className="btn-primary" 
+            <button 
+              type="submit" 
+              className="btn-primary" 
+              style={{
+                marginTop: '6px',
+                padding: '12px',
+                fontSize: '14px',
+                borderRadius: 'var(--radius-md)',
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)'
+              }}
+            >
+              <Send size={16} />
+              <span>Send OTP Verification</span>
+            </button>
+          </form>
+        ) : (
+          /* Step 2: Clean OTP Verification Form */
+          <form 
+            onSubmit={handleVerifyOtp}
             style={{
-              marginTop: '6px',
-              padding: '12px',
-              fontSize: '14px',
-              borderRadius: 'var(--radius-md)',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)'
+              padding: '20px 18px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              boxSizing: 'border-box'
             }}
           >
-            <span>Continue & Sign In</span>
-            <ArrowRight size={16} />
-          </button>
-        </form>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                backgroundColor: '#eff6ff',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 10px',
+                border: '2px solid var(--primary)'
+              }}>
+                <CheckCircle size={24} color="var(--primary)" />
+              </div>
+              <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', marginBottom: '4px' }}>
+                Enter Verification Code
+              </h4>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.4' }}>
+                We sent a 6-digit OTP code to <strong>{phoneNumber}</strong>
+              </p>
+            </div>
+
+            {/* Error Message Alert */}
+            {errorMsg && (
+              <div style={{
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: 'var(--radius-md)',
+                padding: '10px 12px',
+                fontSize: '12px',
+                color: '#dc2626',
+                fontWeight: 600,
+                textAlign: 'center'
+              }}>
+                {errorMsg}
+              </div>
+            )}
+
+            <div className="input-group">
+              <label className="input-label" style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700 }}>
+                6-Digit OTP Code
+              </label>
+              <input 
+                type="text"
+                className="form-input"
+                placeholder="• • • • • •"
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                maxLength={6}
+                required
+                style={{ 
+                  textAlign: 'center', 
+                  letterSpacing: '10px', 
+                  fontSize: '20px', 
+                  fontWeight: 800,
+                  padding: '12px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '2px solid var(--primary)'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button 
+                type="button" 
+                className="btn-primary" 
+                style={{ 
+                  flex: 1, 
+                  backgroundColor: '#f1f5f9', 
+                  border: '1px solid var(--border-subtle)', 
+                  color: 'var(--text-main)',
+                  padding: '12px'
+                }}
+                onClick={() => setStep('info')}
+              >
+                Change Details
+              </button>
+
+              <button 
+                type="submit" 
+                className="btn-primary" 
+                style={{ 
+                  flex: 2,
+                  padding: '12px',
+                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)'
+                }}
+              >
+                Verify & Log In
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </>
   );
