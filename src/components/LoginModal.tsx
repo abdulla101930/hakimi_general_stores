@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp, isOwnerPhone, OWNER_PHONE_DISPLAY } from '../context/AppContext';
 import type { Address } from '../context/AppContext';
-import { X, Send, ShieldAlert, MapPin, CheckCircle, ArrowLeft } from 'lucide-react';
+import { X, Send, ShieldAlert, MapPin, CheckCircle, ArrowLeft, RefreshCw, Smartphone } from 'lucide-react';
 
 export const LoginModal: React.FC = () => {
   const { isLoginOpen, setLoginOpen, login } = useApp();
@@ -20,6 +20,21 @@ export const LoginModal: React.FC = () => {
   const [otpCode, setOtpCode] = useState('');
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [resendTimer, setResendTimer] = useState(30);
+  const [showNotification, setShowNotification] = useState(true);
+
+  // Countdown timer for Resend OTP
+  useEffect(() => {
+    let interval: any = null;
+    if (step === 'otp' && resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer(prev => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [step, resendTimer]);
 
   const isOwner = isOwnerPhone(phoneNumber);
 
@@ -112,7 +127,18 @@ export const LoginModal: React.FC = () => {
     // Generate a 6-digit OTP code (stored internally)
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedOtp(code);
+    setResendTimer(30);
+    setShowNotification(true);
     setStep('otp');
+  };
+
+  const handleResendOtp = () => {
+    if (resendTimer > 0) return;
+    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedOtp(newCode);
+    setResendTimer(30);
+    setShowNotification(true);
+    setErrorMsg('');
   };
 
   // Step 2: Verify OTP
@@ -449,7 +475,7 @@ export const LoginModal: React.FC = () => {
               padding: '20px 18px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '16px',
+              gap: '14px',
               boxSizing: 'border-box'
             }}
           >
@@ -474,6 +500,44 @@ export const LoginModal: React.FC = () => {
                 We sent a 6-digit OTP code to <strong>{phoneNumber}</strong>
               </p>
             </div>
+
+            {/* Simulated SMS Delivered Notification Banner */}
+            {showNotification && (
+              <div style={{
+                backgroundColor: '#eff6ff',
+                border: '1px dashed #3b82f6',
+                borderRadius: 'var(--radius-md)',
+                padding: '10px 12px',
+                fontSize: '12px',
+                color: '#1e40af',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 8
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Smartphone size={16} color="#2563eb" style={{ flexShrink: 0 }} />
+                  <span>SMS Code: <strong style={{ letterSpacing: '1px', fontSize: '13px' }}>{generatedOtp}</strong></span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOtpCode(generatedOtp)}
+                  style={{
+                    backgroundColor: '#2563eb',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  Auto-Fill
+                </button>
+              </div>
+            )}
 
             {/* Error Message Alert */}
             {errorMsg && (
@@ -515,7 +579,32 @@ export const LoginModal: React.FC = () => {
               />
             </div>
 
-            <div style={{ display: 'flex', gap: 10 }}>
+            {/* Resend OTP Row with Timer */}
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, fontSize: '12px', marginTop: '-4px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Didn't get the code?</span>
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={resendTimer > 0}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: resendTimer > 0 ? '#94a3b8' : 'var(--primary)',
+                  fontWeight: 700,
+                  cursor: resendTimer > 0 ? 'not-allowed' : 'pointer',
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: 0
+                }}
+              >
+                <RefreshCw size={12} className={resendTimer > 0 ? '' : ''} />
+                <span>{resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}</span>
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: '4px' }}>
               <button 
                 type="button" 
                 className="btn-primary" 
