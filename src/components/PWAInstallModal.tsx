@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Download, Smartphone, Share, PlusSquare, Check } from 'lucide-react';
+import { X, Download, Smartphone, Share, PlusSquare, Check, MoreVertical } from 'lucide-react';
 
 interface PWAInstallModalProps {
   isOpen: boolean;
@@ -10,21 +10,24 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [installed, setInstalled] = useState(false);
+  const [showManualGuide, setShowManualGuide] = useState(false);
 
   useEffect(() => {
-    // Detect iOS
     const userAgent = window.navigator.userAgent.toLowerCase();
     setIsIOS(/iphone|ipad|ipod/.test(userAgent));
 
-    // Listen for Android / Chrome PWA install prompt event
+    if ((window as any).deferredPwaPrompt) {
+      setDeferredPrompt((window as any).deferredPwaPrompt);
+    }
+
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      (window as any).deferredPwaPrompt = e;
       setDeferredPrompt(e);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Check if already running in standalone mode
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setInstalled(true);
     }
@@ -32,27 +35,34 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
-  }, []);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setInstalled(true);
+    const promptEvent = deferredPrompt || (window as any).deferredPwaPrompt;
+    if (promptEvent) {
+      try {
+        promptEvent.prompt();
+        const { outcome } = await promptEvent.userChoice;
+        if (outcome === 'accepted') {
+          setInstalled(true);
+        }
+        setDeferredPrompt(null);
+        (window as any).deferredPwaPrompt = null;
+      } catch (err) {
+        console.error('Install prompt error:', err);
+        setShowManualGuide(true);
       }
-      setDeferredPrompt(null);
     } else {
-      alert("Application install trigger sent to browser. If no pop-up appeared, open browser options and select 'Add to Home Screen'.");
+      setShowManualGuide(true);
     }
   };
 
   return (
     <>
       <div className="drawer-backdrop active" style={{ zIndex: 300 }} onClick={onClose} />
-      <div className="drawer-content active" style={{ zIndex: 301, maxHeight: '80%' }}>
+      <div className="drawer-content active" style={{ zIndex: 301, maxHeight: '85%' }}>
         <div className="drawer-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Smartphone size={20} color="var(--primary)" />
@@ -79,19 +89,19 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
             🛒
           </div>
 
-          <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-main)', marginBottom: '4px' }}>
             Hakimi Supermarket Mobile App
           </h3>
-          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.4' }}>
-            Install our lightweight app on your phone for instant grocery orders, live tracking & offline access!
+          <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.4' }}>
+            Install our fast mobile app on your home screen for instant ordering & live delivery updates!
           </p>
 
           {installed ? (
             <div style={{
-              backgroundColor: 'var(--success-bg)',
-              color: 'var(--success)',
+              backgroundColor: '#dcfce7',
+              color: '#15803d',
               padding: '12px',
-              borderRadius: 'var(--border-radius-sm)',
+              borderRadius: 'var(--radius-md)',
               fontWeight: 700,
               fontSize: '12px',
               display: 'flex',
@@ -100,23 +110,23 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
               gap: 6
             }}>
               <Check size={18} />
-              <span>App is already installed on your device!</span>
+              <span>App is installed on your device!</span>
             </div>
           ) : isIOS ? (
             <div style={{
               backgroundColor: '#f8fafc',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--border-radius-md)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-md)',
               padding: '14px',
               textAlign: 'left'
             }}>
               <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary)', marginBottom: '8px' }}>
-                🍎 Instructions for iPhone & iPad (Safari):
+                🍎 iPhone & iPad Instructions (Safari):
               </h4>
-              <ol style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '18px', lineHeight: '1.8' }}>
-                <li>Tap the <strong>Share button</strong> <Share size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> at the bottom of Safari screen.</li>
-                <li>Scroll down and tap <strong>"Add to Home Screen"</strong> <PlusSquare size={12} style={{ display: 'inline', verticalAlign: 'middle' }} />.</li>
-                <li>Tap <strong>Add</strong> on the top right to download app to your home screen!</li>
+              <ol style={{ fontSize: '12px', color: 'var(--text-main)', paddingLeft: '18px', lineHeight: '1.8' }}>
+                <li>Tap the <strong>Share icon</strong> <Share size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> in Safari.</li>
+                <li>Scroll down & tap <strong>"Add to Home Screen"</strong> <PlusSquare size={14} style={{ display: 'inline', verticalAlign: 'middle' }} />.</li>
+                <li>Tap <strong>Add</strong> in top right!</li>
               </ol>
             </div>
           ) : (
@@ -125,14 +135,32 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
                 type="button"
                 className="btn-primary"
                 onClick={handleInstallClick}
-                style={{ width: '100%', padding: '12px', fontSize: '14px' }}
+                style={{ width: '100%', padding: '12px', fontSize: '14px', marginBottom: '12px' }}
               >
                 <Download size={18} />
-                <span>Install App on Device</span>
+                <span>Install App Directly</span>
               </button>
-              <p style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '8px' }}>
-                Works on Android, Windows, and Chrome devices.
-              </p>
+
+              {showManualGuide && (
+                <div style={{
+                  backgroundColor: '#fffbebfb',
+                  border: '1px solid #fde68a',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '12px 14px',
+                  textAlign: 'left',
+                  marginTop: '8px'
+                }}>
+                  <h4 style={{ fontSize: '12px', fontWeight: 800, color: '#b45309', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <MoreVertical size={14} />
+                    <span>How to Add to Home Screen in Chrome:</span>
+                  </h4>
+                  <ol style={{ fontSize: '11px', color: '#92400e', paddingLeft: '16px', lineHeight: '1.6' }}>
+                    <li>Tap the <strong>3 dots menu (⋮)</strong> in your browser top-right corner.</li>
+                    <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</li>
+                    <li>Confirm <strong>Install</strong> to get the app icon on your phone!</li>
+                  </ol>
+                </div>
+              )}
             </div>
           )}
         </div>

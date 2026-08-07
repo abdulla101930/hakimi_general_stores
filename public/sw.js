@@ -1,15 +1,17 @@
-const CACHE_NAME = 'hakimi-pwa-v1';
+const CACHE_NAME = 'hakimi-pwa-v2';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.webmanifest',
-  '/favicon.svg'
+  './',
+  './index.html',
+  './manifest.webmanifest',
+  './favicon.svg'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
+      return cache.addAll(ASSETS_TO_CACHE).catch(err => {
+        console.warn('Cache addAll warning:', err);
+      });
     })
   );
   self.skipWaiting();
@@ -43,7 +45,7 @@ self.addEventListener('fetch', (event) => {
         });
         return response;
       }).catch(() => {
-        return caches.match('/');
+        return caches.match('./') || caches.match('./index.html');
       });
     })
   );
