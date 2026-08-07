@@ -17,10 +17,28 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="blinkit-header">
       <div className="blinkit-header-top">
         {/* Brand & Delivery Location Picker */}
-        <div className="brand-location-box">
-          <div className="brand-delivery-tag">
-            <Zap size={11} fill="#d97706" color="#d97706" />
-            <span>Delivery in 8 Mins</span>
+        <div className="brand-location-box" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <img 
+            src="./logo.png" 
+            alt="Hakimi General Store Ratlam" 
+            style={{ 
+              width: '38px', 
+              height: '38px', 
+              borderRadius: '50%', 
+              objectFit: 'cover',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+              border: '2px solid #ffffff',
+              flexShrink: 0
+            }} 
+          />
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 900, color: 'var(--text-main)', letterSpacing: '-0.2px', lineHeight: '1.1' }}>
+              Hakimi General Store
+            </div>
+            <div className="brand-delivery-tag" style={{ marginTop: '2px' }}>
+              <Zap size={10} fill="#d97706" color="#d97706" />
+              <span>Delivery in 8 Mins • Ratlam</span>
+            </div>
           </div>
 
           <button 

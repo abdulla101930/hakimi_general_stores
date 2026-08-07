@@ -230,13 +230,13 @@ export const LoginModal: React.FC = () => {
                 <ArrowLeft size={18} color="var(--primary)" />
               </button>
             )}
-            <span style={{ fontSize: '20px' }}>🛒</span>
+            <img src="./logo.png" alt="Hakimi General Store" style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #cbd5e1' }} />
             <h3 className="drawer-title" style={{ fontSize: '16px', fontWeight: 800 }}>
               {step === 'otp' 
                 ? 'OTP Verification' 
                 : isOwner 
                 ? 'Merchant Login' 
-                : 'Welcome to Hakimi'
+                : 'Hakimi General Store'
               }
             </h3>
           </div>

@@ -74,23 +74,22 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
         </div>
 
         <div className="scrollable" style={{ padding: '16px', textAlign: 'center' }}>
-          <div style={{
-            width: '64px',
-            height: '64px',
-            backgroundColor: '#eff6ff',
-            borderRadius: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 12px',
-            border: '2px solid var(--primary)',
-            fontSize: '32px'
-          }}>
-            🛒
-          </div>
+          <img 
+            src="./logo.png" 
+            alt="Hakimi General Store Logo"
+            style={{
+              width: '72px',
+              height: '72px',
+              borderRadius: '50%',
+              objectFit: 'cover',
+              margin: '0 auto 12px',
+              border: '3px solid var(--primary)',
+              boxShadow: '0 4px 16px rgba(37, 99, 235, 0.2)'
+            }}
+          />
 
           <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-main)', marginBottom: '4px' }}>
-            Hakimi Supermarket Mobile App
+            Hakimi General Store Ratlam
           </h3>
           <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.4' }}>
             Install our fast mobile app on your home screen for instant ordering & live delivery updates!

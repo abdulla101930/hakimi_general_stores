@@ -1,9 +1,12 @@
-const CACHE_NAME = 'hakimi-pwa-v2';
+const CACHE_NAME = 'hakimi-pwa-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './favicon.svg'
+  './logo.png',
+  './pwa-192x192.png',
+  './pwa-512x512.png',
+  './apple-touch-icon.png'
 ];
 
 self.addEventListener('install', (event) => {
