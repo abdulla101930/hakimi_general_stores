@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db, isConfigured } from '../firebase';
+import { logOwnerAction } from '../utils/auditLogger';
 import { 
   doc, 
   collection, 
@@ -504,6 +505,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const setFreeDeliveryThreshold = (val: number) => {
+    logOwnerAction('DELIVERY_THRESHOLD_UPDATED', { oldThreshold: freeDeliveryThreshold, newThreshold: val });
     setFreeDeliveryThresholdState(val);
     localStorage.setItem('hakimi_free_delivery_threshold', val.toString());
   };
@@ -645,6 +647,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isOwnerPhone(formattedPhone)) {
       setRole('owner');
       setView('admin');
+      logOwnerAction('OWNER_LOGIN', { phone: formattedPhone });
     } else {
       setRole('customer');
       setView('catalog');
@@ -844,6 +847,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedFields.eta = 0;
     }
 
+    logOwnerAction('ORDER_STATUS_CHANGED', {
+      orderId,
+      oldStatus: existingOrder?.status,
+      newStatus: status,
+      customerName: existingOrder?.customerName,
+      customerPhone: existingOrder?.customerPhone
+    });
+
     if (isConfigured) {
       const cleanFields = JSON.parse(JSON.stringify(updatedFields));
       updateDoc(doc(db, 'orders', orderId), cleanFields).catch(console.error);
@@ -856,6 +867,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addProduct = async (p: Omit<Product, 'id'>) => {
     const newId = `prod-${Math.floor(1000 + Math.random() * 9000)}`;
+    logOwnerAction('PRODUCT_ADDED', {
+      id: newId,
+      name: p.name,
+      price: p.price,
+      originalPrice: p.originalPrice,
+      weight: p.weight,
+      mainCategory: p.mainCategory,
+      subCategory: p.subCategory,
+      inStock: p.inStock
+    });
+
     if (isConfigured) {
       const cleanProd = JSON.parse(JSON.stringify(p));
       await setDoc(doc(db, 'products', newId), cleanProd).catch(console.error);
@@ -866,6 +888,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateProduct = async (productId: string, fields: Partial<Product>) => {
+    const existingProduct = catalog.find(p => p.id === productId);
+    logOwnerAction('PRODUCT_UPDATED', {
+      id: productId,
+      name: existingProduct?.name,
+      updatedFields: fields,
+      previousState: existingProduct
+    });
+
     if (isConfigured) {
       const cleanFields = JSON.parse(JSON.stringify(fields));
       await updateDoc(doc(db, 'products', productId), cleanFields).catch(console.error);
@@ -877,6 +907,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteProduct = async (productId: string) => {
+    const targetProduct = catalog.find(p => p.id === productId);
+    logOwnerAction('PRODUCT_DELETED', {
+      id: productId,
+      name: targetProduct?.name,
+      price: targetProduct?.price,
+      mainCategory: targetProduct?.mainCategory,
+      subCategory: targetProduct?.subCategory
+    });
+
     if (isConfigured) {
       await deleteDoc(doc(db, 'products', productId)).catch(console.error);
     } else {

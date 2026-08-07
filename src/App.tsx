@@ -8,6 +8,7 @@ import { DeliveryTracking } from './components/DeliveryTracking';
 import { OwnerDashboard } from './components/OwnerDashboard';
 import { MapPickerModal } from './components/MapPickerModal';
 import { PWAInstallModal } from './components/PWAInstallModal';
+import { DevLogsModal } from './components/DevLogsModal';
 import { ArrowRight } from 'lucide-react';
 import type { Address } from './context/AppContext';
 
@@ -23,11 +24,43 @@ const MainLayout: React.FC = () => {
   // Modals state
   const [isMapOpen, setMapOpen] = useState(false);
   const [isPWAOpen, setPWAOpen] = useState(false);
+  const [isDevLogsOpen, setDevLogsOpen] = useState(false);
 
   // Notification states
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [lastOrderStatus, setLastOrderStatus] = useState<string | null>(null);
   const [lastOrdersCount, setLastOrdersCount] = useState<number | null>(null);
+
+  // Developer Audit Console Trigger Listeners
+  useEffect(() => {
+    // 1. Console hook
+    (window as any).showDevLogs = () => setDevLogsOpen(true);
+    (window as any).__HAKIMI_DEV_LOGS__ = () => setDevLogsOpen(true);
+
+    // 2. Keyboard shortcut (Ctrl + Shift + L)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        setDevLogsOpen(prev => !prev);
+      }
+    };
+
+    // 3. Hash listener (#devlogs)
+    const checkHash = () => {
+      if (window.location.hash === '#devlogs') {
+        setDevLogsOpen(true);
+      }
+    };
+    checkHash();
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('hashchange', checkHash);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('hashchange', checkHash);
+    };
+  }, []);
 
   // Calculate cart subtotal & item count for floating cart bar
   const totalItems = Object.values(cart).reduce((sum, count) => sum + count, 0);
@@ -277,6 +310,10 @@ const MainLayout: React.FC = () => {
       <PWAInstallModal
         isOpen={isPWAOpen}
         onClose={() => setPWAOpen(false)}
+      />
+      <DevLogsModal
+        isOpen={isDevLogsOpen}
+        onClose={() => setDevLogsOpen(false)}
       />
     </div>
   );
