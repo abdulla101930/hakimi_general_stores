@@ -795,9 +795,17 @@ html, body {
 .admin-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
   background: #f8fafc;
 }
+
+.scrollable {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 80px;
+}
+
 
 .admin-tabs {
   display: flex;
@@ -864,3 +872,28 @@ html, body {
   font-weight: 700;
   background: #ffffff;
 }
+
+/* Delivery Tracking & Order Confirmation Styles */
+.tracking-container,
+.pending-confirmation-view {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-app);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 60px;
+}
+
+.tracking-sheet {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #ffffff;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  margin-top: -16px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+}
+
