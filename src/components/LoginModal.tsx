@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp, isOwnerPhone, OWNER_PHONE_DISPLAY } from '../context/AppContext';
 import type { Address } from '../context/AppContext';
-import { X, Send, ShieldAlert, MapPin, CheckCircle, ArrowLeft, RefreshCw, Smartphone } from 'lucide-react';
+import { X, Send, ShieldAlert, MapPin, CheckCircle, ArrowLeft, RefreshCw } from 'lucide-react';
 
 export const LoginModal: React.FC = () => {
   const { isLoginOpen, setLoginOpen, login } = useApp();
@@ -130,15 +130,28 @@ export const LoginModal: React.FC = () => {
     setResendTimer(30);
     setShowNotification(true);
     setStep('otp');
+
+    // Trigger WhatsApp message to the customer's phone number
+    const formattedPhoneNum = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
+    const message = `Your Hakimi Supermarket verification OTP code is: ${code}. Please enter this 6-digit code in the app to complete your login.`;
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${formattedPhoneNum}&text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   const handleResendOtp = () => {
     if (resendTimer > 0) return;
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    const formattedPhoneNum = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
     const newCode = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedOtp(newCode);
     setResendTimer(30);
     setShowNotification(true);
     setErrorMsg('');
+
+    // Trigger WhatsApp message for resend
+    const message = `Your new Hakimi Supermarket verification OTP code is: ${newCode}. Please enter this 6-digit code in the app.`;
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${formattedPhoneNum}&text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   // Step 2: Verify OTP
@@ -501,41 +514,44 @@ export const LoginModal: React.FC = () => {
               </p>
             </div>
 
-            {/* Simulated SMS Delivered Notification Banner */}
+            {/* WhatsApp Delivery Notification Banner (OTP code is NOT shown on screen) */}
             {showNotification && (
               <div style={{
-                backgroundColor: '#eff6ff',
-                border: '1px dashed #3b82f6',
+                backgroundColor: '#f0fdf4',
+                border: '1px solid #bbf7d0',
                 borderRadius: 'var(--radius-md)',
                 padding: '10px 12px',
                 fontSize: '12px',
-                color: '#1e40af',
+                color: '#166534',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: 8
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Smartphone size={16} color="#2563eb" style={{ flexShrink: 0 }} />
-                  <span>SMS Code: <strong style={{ letterSpacing: '1px', fontSize: '13px' }}>{generatedOtp}</strong></span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: '16px' }}>💬</span>
+                  <span style={{ fontWeight: 600 }}>OTP sent via WhatsApp to <strong>{phoneNumber}</strong></span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setOtpCode(generatedOtp)}
+                <a
+                  href={`https://api.whatsapp.com/send?phone=${phoneNumber.replace(/\D/g, '').length === 10 ? '91' + phoneNumber.replace(/\D/g, '') : phoneNumber.replace(/\D/g, '')}&text=${encodeURIComponent(`Your Hakimi Supermarket verification OTP code is: ${generatedOtp}. Please enter this code in the app.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style={{
-                    backgroundColor: '#2563eb',
+                    backgroundColor: '#25d366',
                     color: '#ffffff',
-                    border: 'none',
+                    padding: '6px 10px',
                     borderRadius: '4px',
-                    padding: '4px 10px',
+                    textDecoration: 'none',
                     fontSize: '11px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap'
+                    fontWeight: 800,
+                    whiteSpace: 'nowrap',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4
                   }}
                 >
-                  Auto-Fill
-                </button>
+                  Open WhatsApp
+                </a>
               </div>
             )}
 
