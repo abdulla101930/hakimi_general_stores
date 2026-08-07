@@ -11,38 +11,46 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { cart, addToCart, removeFromCart } = useApp();
   const quantity = cart[product.id] || 0;
 
-  // Calculate discount percentage if original price exists
   const discountPercent = product.originalPrice 
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  // Check if image is an emoji or URL
   const isEmoji = !product.image.startsWith('http') && !product.image.startsWith('/');
 
   return (
     <div className="product-card">
-      {/* Discount Tag */}
-      {discountPercent > 0 && product.inStock && (
-        <span className="product-tag">{discountPercent}% OFF</span>
-      )}
+      {/* Image Container with Badges */}
+      <div className="product-img-container">
+        {/* Discount Badge */}
+        {discountPercent > 0 && product.inStock && (
+          <span className="discount-pill">{discountPercent}% OFF</span>
+        )}
 
-      {/* Image Container */}
-      <div className="product-img-wrapper">
+        {/* Dietary Corner Indicator */}
+        {product.dietaryType === 'veg' && (
+          <div className="dietary-badge-corner" title="Vegetarian">
+            <span className="veg-dot" />
+          </div>
+        )}
+        {product.dietaryType === 'non-veg' && (
+          <div className="dietary-badge-corner" title="Non-Vegetarian">
+            <span className="nonveg-dot" />
+          </div>
+        )}
+
         {isEmoji ? (
-          <span style={{ fontSize: '48px', userSelect: 'none' }}>
-            {product.image}
-          </span>
+          <span className="product-emoji-render">{product.image}</span>
         ) : (
           <img 
             src={product.image} 
             alt={product.name} 
-            className="product-img"
+            className="product-img-render"
             onError={(e) => {
               (e.target as HTMLElement).style.display = 'none';
               const parent = (e.target as HTMLElement).parentElement;
               if (parent) {
                 const span = document.createElement('span');
-                span.style.fontSize = '48px';
+                span.className = 'product-emoji-render';
                 span.innerText = '🛍️';
                 parent.appendChild(span);
               }
@@ -50,34 +58,37 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           />
         )}
 
-        {/* Out of Stock Overlay */}
         {!product.inStock && (
-          <div className="out-of-stock-overlay">
-            Out of Stock
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(255,255,255,0.85)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '11px',
+            fontWeight: 800,
+            color: '#ef4444'
+          }}>
+            OUT OF STOCK
           </div>
         )}
       </div>
 
-      {/* Product Information & Dietary Symbol */}
-      <div className="product-weight">{product.weight}</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '2px 0 6px' }}>
-        {product.dietaryType === 'veg' && (
-          <span className="dietary-badge veg" title="Vegetarian" />
-        )}
-        {product.dietaryType === 'non-veg' && (
-          <span className="dietary-badge non-veg" title="Non-Vegetarian" />
-        )}
-        <h3 className="product-name" title={product.name} style={{ margin: 0 }}>
+      {/* Product Details */}
+      <div className="product-info-box">
+        <span className="product-weight-tag">{product.weight}</span>
+        <h3 className="product-title-text" title={product.name}>
           {product.name}
         </h3>
       </div>
 
-      {/* Price and Cart Buttons */}
-      <div className="product-footer">
-        <div className="price-container">
-          <span className="price-current">₹{product.price}</span>
+      {/* Price & Action Row */}
+      <div className="product-bottom-row">
+        <div className="product-price-column">
+          <span className="current-price-val">₹{product.price}</span>
           {product.originalPrice && (
-            <span className="price-original">₹{product.originalPrice}</span>
+            <span className="original-price-val">₹{product.originalPrice}</span>
           )}
         </div>
 
@@ -85,25 +96,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <div>
             {quantity === 0 ? (
               <button 
-                className="btn-add-cart"
+                type="button"
+                className="btn-add-action"
                 onClick={() => addToCart(product.id)}
               >
-                Add
+                ADD
               </button>
             ) : (
-              <div className="qty-control">
+              <div className="qty-stepper-box">
                 <button 
-                  className="btn-qty"
+                  type="button"
+                  className="btn-stepper-sub"
                   onClick={() => removeFromCart(product.id)}
                 >
-                  <Minus size={12} strokeWidth={3} />
+                  <Minus size={13} strokeWidth={3} />
                 </button>
-                <span className="qty-number">{quantity}</span>
+                <span className="stepper-qty-val">{quantity}</span>
                 <button 
-                  className="btn-qty"
+                  type="button"
+                  className="btn-stepper-sub"
                   onClick={() => addToCart(product.id)}
                 >
-                  <Plus size={12} strokeWidth={3} />
+                  <Plus size={13} strokeWidth={3} />
                 </button>
               </div>
             )}

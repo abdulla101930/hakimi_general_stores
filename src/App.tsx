@@ -8,7 +8,7 @@ import { DeliveryTracking } from './components/DeliveryTracking';
 import { OwnerDashboard } from './components/OwnerDashboard';
 import { MapPickerModal } from './components/MapPickerModal';
 import { PWAInstallModal } from './components/PWAInstallModal';
-import { ShoppingBag, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import type { Address } from './context/AppContext';
 
 interface Toast {
@@ -18,7 +18,7 @@ interface Toast {
 }
 
 const MainLayout: React.FC = () => {
-  const { currentView, cart, setCartOpen, activeOrder, setView, role, orders, addNewAddress, setSelectedAddress } = useApp();
+  const { currentView, cart, setCartOpen, activeOrder, setView, role, orders, addNewAddress, setSelectedAddress, catalog } = useApp();
   
   // Modals state
   const [isMapOpen, setMapOpen] = useState(false);
@@ -29,6 +29,13 @@ const MainLayout: React.FC = () => {
   const [lastOrderStatus, setLastOrderStatus] = useState<string | null>(null);
   const [lastOrdersCount, setLastOrdersCount] = useState<number | null>(null);
 
+  // Calculate cart subtotal & item count for floating cart bar
+  const totalItems = Object.values(cart).reduce((sum, count) => sum + count, 0);
+  const cartSubtotal = Object.entries(cart).reduce((sum, [id, qty]) => {
+    const p = catalog.find(prod => prod.id === id);
+    return sum + (p ? p.price * qty : 0);
+  }, 0);
+
   // Request browser Notification permissions on mount
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -36,7 +43,6 @@ const MainLayout: React.FC = () => {
     }
   }, []);
 
-  // Audio helper function to trigger HTML5 beep alerts dynamically
   const playNotificationSound = (isOwnerAlert = false) => {
     try {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -81,7 +87,6 @@ const MainLayout: React.FC = () => {
     }, 4500);
   };
 
-  // 1. Customer: Listen for status updates of active order
   useEffect(() => {
     if (!activeOrder) {
       setLastOrderStatus(null);
@@ -108,7 +113,6 @@ const MainLayout: React.FC = () => {
     setLastOrderStatus(activeOrder.status);
   }, [activeOrder?.status]);
 
-  // 2. Owner: Real-time alert when new customer order arrives
   useEffect(() => {
     if (role !== 'owner') return;
 
@@ -127,8 +131,6 @@ const MainLayout: React.FC = () => {
     setLastOrdersCount(orders.length);
   }, [orders.length, role]);
 
-  const totalItems = Object.values(cart).reduce((sum, count) => sum + count, 0);
-
   const handleSelectMapAddress = (addr: Address) => {
     addNewAddress(addr);
     setSelectedAddress(addr);
@@ -136,23 +138,11 @@ const MainLayout: React.FC = () => {
   };
 
   return (
-    <>
-      <style>{`
-        @keyframes slideDown {
-          from { transform: translateY(-20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes pulseGlow {
-          0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
-          70% { box-shadow: 0 0 0 8px rgba(37, 99, 235, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
-        }
-      `}</style>
-
-      {/* Global In-App Toast Banners */}
+    <div className="app-shell">
+      {/* Toast Banners */}
       <div style={{
-        position: 'absolute',
-        top: '16px',
+        position: 'fixed',
+        top: '12px',
         left: '16px',
         right: '16px',
         zIndex: 9999,
@@ -166,18 +156,17 @@ const MainLayout: React.FC = () => {
             key={toast.id}
             style={{
               pointerEvents: 'auto',
-              backgroundColor: 'var(--text-primary)',
-              color: 'var(--bg-card)',
+              backgroundColor: '#0f172a',
+              color: '#ffffff',
               padding: '10px 14px',
-              borderRadius: 'var(--border-radius-sm)',
-              fontSize: '11px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '12px',
               fontWeight: 600,
               boxShadow: 'var(--shadow-lg)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderLeft: toast.type === 'success' ? '4px solid var(--primary)' : '4px solid var(--accent)',
-              animation: 'slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+              borderLeft: toast.type === 'success' ? '4px solid #16a34a' : '4px solid #2563eb',
             }}
           >
             <span style={{ flex: 1 }}>{toast.message}</span>
@@ -200,71 +189,77 @@ const MainLayout: React.FC = () => {
         ))}
       </div>
 
-      {/* Dynamic View rendering */}
+      {/* Main View Area */}
       {currentView === 'admin' ? (
         <OwnerDashboard />
       ) : currentView === 'tracking' ? (
         <DeliveryTracking />
       ) : (
         <>
-          {/* Navbar */}
+          {/* Header */}
           <Navbar 
             onOpenPWA={() => setPWAOpen(true)}
             onOpenMap={() => setMapOpen(true)}
           />
           
-          {/* Main Catalog View */}
-          <Catalog />
+          {/* Scrollable Product Catalog Section */}
+          <div className="main-content-scroll">
+            <Catalog />
+          </div>
 
           {/* Active Order Tracker Banner */}
           {activeOrder && (
             <div 
               onClick={() => setView('tracking')}
               style={{
-                position: 'absolute',
-                bottom: totalItems > 0 ? '76px' : '16px',
+                position: 'fixed',
+                bottom: totalItems > 0 ? '84px' : '20px',
                 left: '16px',
                 right: '16px',
-                backgroundColor: 'rgba(37, 99, 235, 0.95)',
+                maxWidth: '600px',
+                margin: '0 auto',
+                backgroundColor: 'rgba(37, 99, 235, 0.96)',
                 backdropFilter: 'blur(8px)',
-                border: '1px solid var(--primary)',
-                borderRadius: 'var(--border-radius-md)',
-                padding: '10px 14px',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '12px 16px',
                 color: 'white',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 cursor: 'pointer',
-                boxShadow: 'var(--shadow-md)',
-                zIndex: 35,
-                animation: 'pulseGlow 2s infinite'
+                boxShadow: 'var(--shadow-lg)',
+                zIndex: 45
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: '16px' }}>🛵</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: '20px' }}>🛵</span>
                 <div>
-                  <h4 style={{ fontSize: '11px', fontWeight: 700, margin: 0 }}>Active Delivery in Progress</h4>
-                  <p style={{ fontSize: '9px', opacity: 0.9, marginTop: '1px' }}>Status: {activeOrder.status.replace(/_/g, ' ')}</p>
+                  <h4 style={{ fontSize: '12px', fontWeight: 800, margin: 0 }}>Active Delivery in Progress</h4>
+                  <p style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>Status: {activeOrder.status.replace(/_/g, ' ')}</p>
                 </div>
               </div>
-              <span style={{ fontSize: '11px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 2 }}>
-                Track <ArrowRight size={10} />
+              <span style={{ fontSize: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+                Track <ArrowRight size={12} />
               </span>
             </div>
           )}
 
-          {/* Bottom Cart Trigger */}
+          {/* Blinkit Style Floating Cart Trigger */}
           {totalItems > 0 && (
-            <div className="bottom-bar">
-              <div className="cart-summary-trigger" onClick={() => setCartOpen(true)}>
-                <div className="cart-trigger-left">
-                  <ShoppingBag size={18} />
-                  <span className="cart-trigger-items">{totalItems} {totalItems === 1 ? 'item' : 'items'}</span>
+            <div className="floating-cart-bar" onClick={() => setCartOpen(true)}>
+              <div className="cart-bar-left">
+                <div className="cart-count-badge">
+                  {totalItems}
                 </div>
-                <span className="cart-trigger-right">
-                  <span>View Cart</span>
-                  <ArrowRight size={14} strokeWidth={3} />
-                </span>
+                <div className="cart-bar-details">
+                  <span className="cart-bar-title">{totalItems} {totalItems === 1 ? 'ITEM' : 'ITEMS'}</span>
+                  <span className="cart-bar-subtitle">₹{cartSubtotal} + Taxes & Charges</span>
+                </div>
+              </div>
+              <div className="cart-bar-right">
+                <span>View Cart</span>
+                <ArrowRight size={16} strokeWidth={3} />
               </div>
             </div>
           )}
@@ -283,7 +278,7 @@ const MainLayout: React.FC = () => {
         isOpen={isPWAOpen}
         onClose={() => setPWAOpen(false)}
       />
-    </>
+    </div>
   );
 };
 

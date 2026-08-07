@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { ProductCard } from './ProductCard';
-import { Search, Filter, Truck } from 'lucide-react';
+import { Search, Bike, X } from 'lucide-react';
 
 export const FOOD_SUBDIVISIONS = [
   'All',
@@ -46,6 +46,7 @@ export const Catalog: React.FC = () => {
   }, [cart, catalog]);
 
   const amountNeededForFreeDelivery = Math.max(0, freeDeliveryThreshold - cartSubtotal);
+  const progressPercent = Math.min(100, (cartSubtotal / freeDeliveryThreshold) * 100);
 
   // Active subdivisions based on main category
   const activeSubdivisions = selectedMainCat === 'Food' ? FOOD_SUBDIVISIONS : HYGIENE_SUBDIVISIONS;
@@ -53,20 +54,16 @@ export const Catalog: React.FC = () => {
   // Filter products by Main Category, Sub Category, Dietary Filter, and Search
   const filteredProducts = useMemo(() => {
     return catalog.filter(p => {
-      // Main Category Match (fallback to Food if missing)
       const pMain = p.mainCategory || 'Food';
       if (pMain !== selectedMainCat) return false;
 
-      // Sub Category Match
       if (selectedSubCat !== 'All') {
         if (p.subCategory !== selectedSubCat) return false;
       }
 
-      // Dietary Filter Match (only applies if food or if specified)
       if (dietaryFilter === 'veg' && p.dietaryType !== 'veg') return false;
       if (dietaryFilter === 'non-veg' && p.dietaryType !== 'non-veg') return false;
 
-      // Search Query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesName = p.name.toLowerCase().includes(q);
@@ -79,152 +76,126 @@ export const Catalog: React.FC = () => {
   }, [catalog, selectedMainCat, selectedSubCat, dietaryFilter, searchQuery]);
 
   return (
-    <div className="catalog-container">
-      {/* Search & Hero Banner */}
-      <div style={{ padding: '12px 12px 0' }}>
-        <div className="search-bar-wrapper">
-          <Search className="search-icon" size={16} />
+    <div style={{ width: '100%' }}>
+      {/* Header Search Bar */}
+      <div className="header-search-wrapper">
+        <div className="search-input-box">
+          <Search size={18} color="var(--primary)" />
           <input
             type="text"
-            className="search-input"
-            placeholder="Search groceries, atta, dairy, soaps..."
+            className="search-input-field"
+            placeholder='Search "milk", "fruits", "oil", "soap"...'
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-        </div>
-      </div>
-
-      {/* Free Delivery Threshold Notification Banner */}
-      <div className="free-delivery-banner">
-        <Truck size={20} color="#2563eb" />
-        <div style={{ flex: 1 }}>
-          {amountNeededForFreeDelivery > 0 ? (
-            <div className="free-delivery-text">
-              Add <span className="free-delivery-accent">₹{amountNeededForFreeDelivery}</span> worth items more to unlock <span className="free-delivery-accent">FREE delivery & handling</span>!
-            </div>
-          ) : (
-            <div className="free-delivery-text" style={{ color: '#16a34a' }}>
-              🎉 <strong>FREE Delivery & Handling Unlocked!</strong> (Cart &gt;= ₹{freeDeliveryThreshold})
-            </div>
+          {searchQuery && (
+            <button 
+              type="button" 
+              onClick={() => setSearchQuery('')}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+            >
+              <X size={16} />
+            </button>
           )}
         </div>
       </div>
 
-      {/* Main Category Switcher (Food vs Hygiene) */}
-      <div className="main-category-switcher">
+      {/* Main Category Tabs (Food vs Hygiene) */}
+      <div className="category-segmented-bar">
         <button
           type="button"
-          className={`main-cat-btn ${selectedMainCat === 'Food' ? 'active' : ''}`}
+          className={`segment-tab ${selectedMainCat === 'Food' ? 'active' : ''}`}
           onClick={() => {
             setSelectedMainCat('Food');
             setSelectedSubCat('All');
           }}
         >
           <span>🍎</span>
-          <span>Food</span>
+          <span>Food Store</span>
         </button>
 
         <button
           type="button"
-          className={`main-cat-btn ${selectedMainCat === 'Hygiene' ? 'active' : ''}`}
+          className={`segment-tab ${selectedMainCat === 'Hygiene' ? 'active' : ''}`}
           onClick={() => {
             setSelectedMainCat('Hygiene');
             setSelectedSubCat('All');
           }}
         >
           <span>🧼</span>
-          <span>Hygiene</span>
+          <span>Hygiene & Care</span>
         </button>
       </div>
 
-      {/* Top Dietary Filter for Veg / Non-Veg (shown for Food or catalog) */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '8px 12px 0',
-        gap: '6px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)' }}>
-          <Filter size={12} color="var(--primary)" />
-          <span>Dietary Preference:</span>
-        </div>
+      {/* Dietary Preference & Filter Bar */}
+      <div className="filter-sticky-row">
+        <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-main)' }}>
+          {selectedSubCat === 'All' ? selectedMainCat : selectedSubCat} ({filteredProducts.length})
+        </span>
 
-        <div style={{ display: 'flex', gap: 4 }}>
+        <div className="dietary-pills-group">
           <button
             type="button"
+            className={`dietary-pill ${dietaryFilter === 'all' ? 'active all' : ''}`}
             onClick={() => setDietaryFilter('all')}
-            style={{
-              padding: '3px 8px',
-              borderRadius: '12px',
-              fontSize: '11px',
-              fontWeight: 700,
-              border: 'none',
-              backgroundColor: dietaryFilter === 'all' ? 'var(--primary)' : 'var(--bg-input)',
-              color: dietaryFilter === 'all' ? 'white' : 'var(--text-secondary)',
-              cursor: 'pointer'
-            }}
           >
             All
           </button>
+
           <button
             type="button"
+            className={`dietary-pill ${dietaryFilter === 'veg' ? 'active veg' : ''}`}
             onClick={() => setDietaryFilter('veg')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '3px 8px',
-              borderRadius: '12px',
-              fontSize: '11px',
-              fontWeight: 700,
-              border: 'none',
-              backgroundColor: dietaryFilter === 'veg' ? '#16a34a' : 'var(--bg-input)',
-              color: dietaryFilter === 'veg' ? 'white' : '#16a34a',
-              cursor: 'pointer'
-            }}
           >
-            <span className="dietary-badge veg" style={{ width: 10, height: 10 }} />
-            <span>Veg</span>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--veg-color)' }} />
+            Veg
           </button>
+
           <button
             type="button"
+            className={`dietary-pill ${dietaryFilter === 'non-veg' ? 'active non-veg' : ''}`}
             onClick={() => setDietaryFilter('non-veg')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '3px 8px',
-              borderRadius: '12px',
-              fontSize: '11px',
-              fontWeight: 700,
-              border: 'none',
-              backgroundColor: dietaryFilter === 'non-veg' ? '#dc2626' : 'var(--bg-input)',
-              color: dietaryFilter === 'non-veg' ? 'white' : '#dc2626',
-              cursor: 'pointer'
-            }}
           >
-            <span className="dietary-badge non-veg" style={{ width: 10, height: 10 }} />
-            <span>Non-Veg</span>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--non-veg-color)' }} />
+            Non-Veg
           </button>
         </div>
       </div>
 
-      {/* Subcategory Pills Slider */}
-      <div className="category-slider">
+      {/* Single Horizontal Scrolling Sub-Category Carousel */}
+      <div className="subcategories-carousel">
         {activeSubdivisions.map(subCat => (
           <button
             key={subCat}
-            className={`category-pill ${selectedSubCat === subCat ? 'active' : ''}`}
+            className={`subcategory-pill ${selectedSubCat === subCat ? 'active' : ''}`}
             onClick={() => setSelectedSubCat(subCat)}
           >
-            {subCat === 'All' ? '✨ All' : subCat}
+            {subCat === 'All' ? '✨ All Categories' : subCat}
           </button>
         ))}
       </div>
 
+      {/* Blinkit Free Delivery Banner */}
+      <div className={`free-delivery-banner-card ${amountNeededForFreeDelivery === 0 ? 'unlocked' : ''}`}>
+        <Bike size={20} color={amountNeededForFreeDelivery === 0 ? 'var(--veg-color)' : 'var(--primary)'} />
+        <div className="free-delivery-text-info">
+          {amountNeededForFreeDelivery > 0 ? (
+            <>
+              Add products worth <strong>₹{amountNeededForFreeDelivery} more</strong> for <strong>FREE Delivery & Handling</strong>!
+              <div className="progress-bar-track">
+                <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }} />
+              </div>
+            </>
+          ) : (
+            <>
+              🎉 <strong>FREE Delivery Unlocked!</strong> You saved handling & delivery charges on this order.
+            </>
+          )}
+        </div>
+      </div>
+
       {/* Product Grid */}
-      <div className="product-grid" style={{ minHeight: '300px' }}>
+      <div className="products-grid">
         {filteredProducts.length > 0 ? (
           filteredProducts.map(product => (
             <ProductCard key={product.id} product={product} />
@@ -233,12 +204,16 @@ export const Catalog: React.FC = () => {
           <div style={{
             gridColumn: '1 / -1',
             textAlign: 'center',
-            padding: '48px 16px',
-            color: 'var(--text-muted)'
+            padding: '60px 16px',
+            color: 'var(--text-muted)',
+            background: '#ffffff',
+            borderRadius: 'var(--radius-lg)',
+            margin: '0 16px',
+            border: '1px solid var(--border-subtle)'
           }}>
-            <p style={{ fontSize: '32px', marginBottom: '8px' }}>🔍</p>
-            <h4 style={{ fontSize: '15px', color: 'var(--text-primary)', marginBottom: '4px' }}>No items found</h4>
-            <p style={{ fontSize: '12px' }}>Try selecting a different subdivision or dietary filter.</p>
+            <p style={{ fontSize: '36px', marginBottom: '8px' }}>🛒</p>
+            <h4 style={{ fontSize: '15px', color: 'var(--text-main)', fontWeight: 800, marginBottom: '4px' }}>No items found</h4>
+            <p style={{ fontSize: '12px' }}>Try switching categories or clearing search filters.</p>
           </div>
         )}
       </div>
