@@ -33,9 +33,32 @@ const MainLayout: React.FC = () => {
 
   // Developer Audit Console Trigger Listeners
   useEffect(() => {
-    // 1. Console hook
-    (window as any).showDevLogs = () => setDevLogsOpen(true);
-    (window as any).__HAKIMI_DEV_LOGS__ = () => setDevLogsOpen(true);
+    const triggerLogs = () => {
+      setDevLogsOpen(true);
+      return "Opening Developer Audit Console...";
+    };
+
+    // Attach to global window
+    Object.defineProperty(window, 'showDevLogs', {
+      value: triggerLogs,
+      writable: true,
+      configurable: true
+    });
+    (window as any).__HAKIMI_DEV_LOGS__ = triggerLogs;
+    (window as any).devlogs = triggerLogs;
+
+    // Log developer welcome message in browser console once
+    console.log(
+      "%c[DEVELOPER AUDIT SYSTEM ACTIVE] %cType %cshowDevLogs()%c or press %cCtrl+Shift+L%c or add %c#devlogs%c to URL to inspect owner logs.",
+      "color: #2563eb; font-weight: bold;",
+      "color: #475569;",
+      "color: #10b981; font-weight: bold; font-family: monospace;",
+      "color: #475569;",
+      "color: #f59e0b; font-weight: bold;",
+      "color: #475569;",
+      "color: #8b5cf6; font-weight: bold; font-family: monospace;",
+      "color: #475569;"
+    );
 
     // 2. Keyboard shortcut (Ctrl + Shift + L)
     const handleKeyDown = (e: KeyboardEvent) => {
