@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import type { Product } from '../context/AppContext';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, Heart } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
@@ -10,6 +10,7 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { cart, addToCart, removeFromCart } = useApp();
   const quantity = cart[product.id] || 0;
+  const [isLiked, setIsLiked] = useState(false);
 
   const discountPercent = product.originalPrice 
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -20,7 +21,32 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <div className="product-card">
       {/* Image Container with Badges */}
-      <div className="product-img-container">
+      <div className="product-img-container" style={{ position: 'relative' }}>
+        {/* Heart Wishlist Button */}
+        <button
+          type="button"
+          onClick={() => setIsLiked(!isLiked)}
+          style={{
+            position: 'absolute',
+            top: '6px',
+            right: '6px',
+            zIndex: 3,
+            background: 'rgba(255, 255, 255, 0.85)',
+            border: 'none',
+            borderRadius: '50%',
+            width: '24px',
+            height: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            padding: 0,
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}
+          title="Save for later"
+        >
+          <Heart size={14} color={isLiked ? '#ef4444' : '#64748b'} fill={isLiked ? '#ef4444' : 'none'} />
+        </button>
         {/* Discount Badge */}
         {discountPercent > 0 && product.inStock && (
           <span className="discount-pill">{discountPercent}% OFF</span>

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { ProductCard } from './ProductCard';
-import { Search, Bike, X } from 'lucide-react';
+import { Search, Mic, ChevronRight, X } from 'lucide-react';
 
 export const FOOD_SUBDIVISIONS = [
   'All',
@@ -28,30 +28,29 @@ export const HYGIENE_SUBDIVISIONS = [
   'detergents'
 ];
 
+// Top Horizontal Category Icons matching reference screenshot
+const CATEGORY_ICONS = [
+  { id: 'All', label: 'All', icon: '🍺' },
+  { id: 'bakery/biscuits', label: 'Bakery', icon: '🍥' },
+  { id: 'teas/coffees/beverages', label: 'Drinks', icon: '🎧' },
+  { id: 'bath/body', label: 'Beauty', icon: '💄' },
+  { id: 'skin care', label: 'Decor', icon: '🛋️' },
+  { id: 'dairy/bread/eggs', label: 'Kids', icon: '🍼' },
+  { id: 'veg/fruits', label: 'Fresh', icon: '🍎' },
+  { id: 'chips/namkeen', label: 'Snacks', icon: '🍿' }
+];
+
 export const Catalog: React.FC = () => {
-  const { catalog, cart, freeDeliveryThreshold } = useApp();
+  const { catalog } = useApp();
   const [selectedMainCat, setSelectedMainCat] = useState<'Food' | 'Hygiene'>('Food');
   const [selectedSubCat, setSelectedSubCat] = useState<string>('All');
   const [dietaryFilter, setDietaryFilter] = useState<'all' | 'veg' | 'non-veg'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Calculate current cart total for free delivery threshold prompt
-  const cartSubtotal = useMemo(() => {
-    let sum = 0;
-    Object.entries(cart).forEach(([id, qty]) => {
-      const p = catalog.find(prod => prod.id === id);
-      if (p) sum += p.price * qty;
-    });
-    return sum;
-  }, [cart, catalog]);
-
-  const amountNeededForFreeDelivery = Math.max(0, freeDeliveryThreshold - cartSubtotal);
-  const progressPercent = Math.min(100, (cartSubtotal / freeDeliveryThreshold) * 100);
-
   // Active subdivisions based on main category
   const activeSubdivisions = selectedMainCat === 'Food' ? FOOD_SUBDIVISIONS : HYGIENE_SUBDIVISIONS;
 
-  // Filter products by Main Category, Sub Category, Dietary Filter, and Search
+  // Filter products
   const filteredProducts = useMemo(() => {
     return catalog.filter(p => {
       const pMain = p.mainCategory || 'Food';
@@ -76,32 +75,158 @@ export const Catalog: React.FC = () => {
   }, [catalog, selectedMainCat, selectedSubCat, dietaryFilter, searchQuery]);
 
   return (
-    <div style={{ width: '100%' }}>
-      {/* Header Search Bar */}
-      <div className="header-search-wrapper">
-        <div className="search-input-box">
-          <Search size={18} color="var(--primary)" />
+    <div style={{ width: '100%', background: '#ffffff', minHeight: '100vh' }}>
+      {/* 1. Header Search Bar with Voice Mic */}
+      <div style={{ padding: '8px 16px 12px', background: '#eff6ff', borderBottom: '1px solid #dbeafe' }}>
+        <div className="blinkit-search-bar">
+          <Search size={18} color="#2563eb" />
           <input
             type="text"
-            className="search-input-field"
-            placeholder='Search "milk", "fruits", "oil", "soap"...'
+            className="blinkit-search-input"
+            placeholder='Search "workout", "biscuits", "milk", "oil"...'
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          {searchQuery && (
+          {searchQuery ? (
             <button 
               type="button" 
               onClick={() => setSearchQuery('')}
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}
             >
               <X size={16} />
             </button>
+          ) : (
+            <Mic size={18} color="#64748b" style={{ cursor: 'pointer' }} />
           )}
         </div>
       </div>
 
-      {/* Main Category Tabs (Food vs Hygiene) */}
-      <div className="category-segmented-bar">
+      {/* 2. Blinkit Category Icon Tabs Row */}
+      <div className="blinkit-category-icons-row">
+        {CATEGORY_ICONS.map((cat) => (
+          <button
+            key={cat.id}
+            type="button"
+            className={`blinkit-category-icon-item ${selectedSubCat === cat.id ? 'active' : ''}`}
+            onClick={() => {
+              if (cat.id === 'bath/body' || cat.id === 'skin care') {
+                setSelectedMainCat('Hygiene');
+              } else {
+                setSelectedMainCat('Food');
+              }
+              setSelectedSubCat(cat.id);
+            }}
+          >
+            <div className="icon-box">{cat.icon}</div>
+            <span className="icon-label">{cat.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* 3. Featured Banners Horizontal Carousel */}
+      <div className="blinkit-banners-carousel">
+        <div className="blinkit-banner-card blue-gradient">
+          <span className="blinkit-banner-tag">Festive Finds</span>
+          <div>
+            <span style={{ fontSize: '11px', opacity: 0.9 }}>CELEBRATE</span>
+            <div className="blinkit-banner-title">sawan</div>
+          </div>
+        </div>
+
+        <div className="blinkit-banner-card sky-gradient">
+          <span className="blinkit-banner-tag" style={{ background: '#f59e0b', color: '#ffffff' }}>NEWLY LAUNCHED</span>
+          <div className="blinkit-banner-title">Essential Combos</div>
+          <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.2)', padding: '2px 6px', borderRadius: '6px', width: 'fit-content' }}>
+            ✦ For You ✦
+          </span>
+        </div>
+
+        <div className="blinkit-banner-card indigo-gradient">
+          <span className="blinkit-banner-tag">Featured</span>
+          <div>
+            <div className="blinkit-banner-title">Midnight Essentials</div>
+            <span style={{ fontSize: '10px', opacity: 0.85 }}>Superfast 8 min delivery</span>
+          </div>
+        </div>
+
+        <div className="blinkit-banner-card cyan-gradient">
+          <span className="blinkit-banner-tag">Fresh</span>
+          <div className="blinkit-banner-title">Ratlam Groceries</div>
+          <span style={{ fontSize: '10px', opacity: 0.85 }}>Direct from Farm</span>
+        </div>
+      </div>
+
+      {/* 4. Frequently bought Section Cards */}
+      <div className="blinkit-section-header">
+        Frequently bought
+      </div>
+
+      <div className="frequently-bought-grid">
+        {/* Card 1: Chocolates & Candies */}
+        <div 
+          className="freq-bought-card"
+          onClick={() => {
+            setSelectedMainCat('Food');
+            setSelectedSubCat('bakery/biscuits');
+          }}
+        >
+          <div className="freq-thumbs-wrapper">
+            <span className="freq-thumb-img" style={{ fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🍫</span>
+            <span className="freq-thumb-img" style={{ fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🍬</span>
+            <span className="freq-more-badge">+7 more</span>
+          </div>
+          <span className="freq-card-label">Chocolates & Candies</span>
+        </div>
+
+        {/* Card 2: Chips & Namkeen */}
+        <div 
+          className="freq-bought-card"
+          onClick={() => {
+            setSelectedMainCat('Food');
+            setSelectedSubCat('chips/namkeen');
+          }}
+        >
+          <div className="freq-thumbs-wrapper">
+            <span className="freq-thumb-img" style={{ fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🍿</span>
+            <span className="freq-thumb-img" style={{ fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🥨</span>
+            <span className="freq-more-badge">+4 more</span>
+          </div>
+          <span className="freq-card-label">Chips & Namkeen</span>
+        </div>
+
+        {/* Card 3: Cakes & Biscuits */}
+        <div 
+          className="freq-bought-card"
+          onClick={() => {
+            setSelectedMainCat('Food');
+            setSelectedSubCat('bakery/biscuits');
+          }}
+        >
+          <div className="freq-thumbs-wrapper">
+            <span className="freq-thumb-img" style={{ fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🍰</span>
+            <span className="freq-thumb-img" style={{ fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🍪</span>
+            <span className="freq-more-badge">+6 more</span>
+          </div>
+          <span className="freq-card-label">Cakes & Biscuits</span>
+        </div>
+      </div>
+
+      {/* See All Products Callout */}
+      <button 
+        type="button" 
+        className="see-all-products-banner"
+        onClick={() => {
+          setSelectedMainCat('Food');
+          setSelectedSubCat('All');
+        }}
+      >
+        <span style={{ fontSize: '14px' }}>🍫 🍿 🍰</span>
+        <span>See all products</span>
+        <ChevronRight size={14} color="#1d4ed8" />
+      </button>
+
+      {/* 5. Main Category Segmented Bar & Sub-Category Carousel */}
+      <div className="category-segmented-bar" style={{ margin: '8px 16px' }}>
         <button
           type="button"
           className={`segment-tab ${selectedMainCat === 'Food' ? 'active' : ''}`}
@@ -127,10 +252,10 @@ export const Catalog: React.FC = () => {
         </button>
       </div>
 
-      {/* Dietary Preference & Filter Bar */}
+      {/* Filter Row (Count & Veg Pill) */}
       <div className="filter-sticky-row">
-        <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-main)' }}>
-          {selectedSubCat === 'All' ? selectedMainCat : selectedSubCat} ({filteredProducts.length})
+        <span style={{ fontSize: '13px', fontWeight: 900, color: '#0f172a' }}>
+          {selectedSubCat === 'All' ? `${selectedMainCat} Specials` : selectedSubCat} ({filteredProducts.length})
         </span>
 
         <div className="dietary-pills-group">
@@ -162,7 +287,7 @@ export const Catalog: React.FC = () => {
         </div>
       </div>
 
-      {/* Single Horizontal Scrolling Sub-Category Carousel */}
+      {/* Subcategory Pills Horizontal Carousel */}
       <div className="subcategories-carousel">
         {activeSubdivisions.map(subCat => (
           <button
@@ -175,27 +300,8 @@ export const Catalog: React.FC = () => {
         ))}
       </div>
 
-      {/* Blinkit Free Delivery Banner */}
-      <div className={`free-delivery-banner-card ${amountNeededForFreeDelivery === 0 ? 'unlocked' : ''}`}>
-        <Bike size={20} color={amountNeededForFreeDelivery === 0 ? 'var(--veg-color)' : 'var(--primary)'} />
-        <div className="free-delivery-text-info">
-          {amountNeededForFreeDelivery > 0 ? (
-            <>
-              Add products worth <strong>₹{amountNeededForFreeDelivery} more</strong> for <strong>FREE Delivery & Handling</strong>!
-              <div className="progress-bar-track">
-                <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }} />
-              </div>
-            </>
-          ) : (
-            <>
-              🎉 <strong>FREE Delivery Unlocked!</strong> You saved handling & delivery charges on this order.
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Product Grid */}
-      <div className="products-grid">
+      {/* 6. Product Cards Grid */}
+      <div className="products-grid" style={{ padding: '16px' }}>
         {filteredProducts.length > 0 ? (
           filteredProducts.map(product => (
             <ProductCard key={product.id} product={product} />

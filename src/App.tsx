@@ -9,6 +9,7 @@ import { OwnerDashboard } from './components/OwnerDashboard';
 import { MapPickerModal } from './components/MapPickerModal';
 import { PWAInstallModal } from './components/PWAInstallModal';
 import { DevLogsModal } from './components/DevLogsModal';
+import { FloatingBottomNav } from './components/FloatingBottomNav';
 import { ArrowRight } from 'lucide-react';
 import type { Address } from './context/AppContext';
 
@@ -319,6 +320,9 @@ const MainLayout: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Floating Bottom Nav Bar */}
+          <FloatingBottomNav onOpenCart={() => setCartOpen(true)} />
         </>
       )}
 
