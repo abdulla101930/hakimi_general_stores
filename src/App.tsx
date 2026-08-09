@@ -264,7 +264,7 @@ const MainLayout: React.FC = () => {
           </div>
 
           {/* Active Order Tracker Banner */}
-          {activeOrder && (
+          {activeOrder && !isMapOpen && !isPWAOpen && !isDevLogsOpen && (
             <div 
               onClick={() => setView('tracking')}
               style={{
@@ -305,7 +305,10 @@ const MainLayout: React.FC = () => {
 
       {/* Magic Bottom Navigation Menu */}
       {currentView !== 'admin' && (
-        <MagicBottomNav onOpenPWA={() => setPWAOpen(true)} />
+        <MagicBottomNav 
+          onOpenPWA={() => setPWAOpen(true)} 
+          isModalOpen={isMapOpen || isPWAOpen || isDevLogsOpen}
+        />
       )}
 
       {/* Drawers and Modals */}

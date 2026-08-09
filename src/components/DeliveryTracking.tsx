@@ -11,12 +11,66 @@ import {
 } from 'lucide-react';
 
 export const DeliveryTracking: React.FC = () => {
-  const { activeOrder, orders, setView, selectedAddress } = useApp();
+  const { activeOrder, orders, setView, selectedAddress, user, setLoginOpen } = useApp();
   const [selectedOrderIdx, setSelectedOrderIdx] = useState<number>(0);
   const [isBillExpanded, setIsBillExpanded] = useState<boolean>(true);
 
-  // Use activeOrder if present; otherwise fallback to most recent order from order history
-  const displayedOrder = activeOrder || (orders && orders.length > 0 ? orders[selectedOrderIdx || 0] : null);
+  const cleanPhone = (p?: string) => (p ? p.replace(/\D/g, '') : '');
+  const customerPhoneClean = cleanPhone(user?.phone);
+
+  const customerOrders = user && customerPhoneClean
+    ? orders.filter(o => cleanPhone(o.customerPhone) === customerPhoneClean)
+    : [];
+
+  const userActiveOrder = activeOrder && cleanPhone(activeOrder.customerPhone) === customerPhoneClean
+    ? activeOrder
+    : null;
+
+  const displayedOrder = userActiveOrder || (customerOrders.length > 0 ? customerOrders[selectedOrderIdx || 0] : null);
+
+  if (!user) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '60px 20px',
+        textAlign: 'center',
+        minHeight: '80vh',
+        background: '#ffffff'
+      }}>
+        <div style={{
+          width: '72px',
+          height: '72px',
+          borderRadius: '50%',
+          background: '#eff6ff',
+          color: '#2563eb',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '32px',
+          marginBottom: '16px',
+          boxShadow: '0 8px 24px rgba(37, 99, 235, 0.15)'
+        }}>
+          👤
+        </div>
+        <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#0f172a', marginBottom: '8px' }}>
+          Please Log In
+        </h3>
+        <p style={{ fontSize: '13px', color: '#64748b', maxWidth: '280px', lineHeight: '1.5', margin: '0 0 24px' }}>
+          Log in with your mobile number to view your order history and track your live deliveries.
+        </p>
+        <button 
+          className="btn-primary" 
+          style={{ padding: '12px 28px', fontSize: '14px', borderRadius: '24px' }}
+          onClick={() => setLoginOpen(true)}
+        >
+          Log In Now
+        </button>
+      </div>
+    );
+  }
 
   if (!displayedOrder) {
     return (
@@ -49,7 +103,7 @@ export const DeliveryTracking: React.FC = () => {
           No Active Deliveries
         </h3>
         <p style={{ fontSize: '13px', color: '#64748b', maxWidth: '280px', lineHeight: '1.5', margin: '0 0 24px' }}>
-          You don't have any orders being processed right now. Place an order from the home page to track it live!
+          You don't have any orders placed yet. Browse the catalog to place an order!
         </p>
         <button 
           className="btn-primary" 
@@ -200,10 +254,10 @@ export const DeliveryTracking: React.FC = () => {
         </div>
       </div>
 
-      {/* Orders selector tab bar if multiple orders exist */}
-      {orders && orders.length > 1 && (
+      {/* Orders selector tab bar if multiple customer orders exist */}
+      {customerOrders && customerOrders.length > 1 && (
         <div className="orders-tab-scroll">
-          {orders.map((ord, idx) => (
+          {customerOrders.map((ord, idx) => (
             <button
               key={ord.id}
               type="button"

@@ -950,40 +950,34 @@ html, body {
   transition: width 0.3s ease;
 }
 
-/* Product Cards Grid - Modern Responsive Grid */
+/* Product Cards Grid - Exactly 4 Products per Line Across All Screens */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  padding: 0 16px 20px 16px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 0 8px 20px 8px;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 768px) {
   .products-grid {
-    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .products-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
+    padding: 0 16px 20px 16px;
   }
 }
 
 /* Modern Product Card Design */
 .product-card {
   background: #ffffff;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
-  padding: 10px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   position: relative;
   box-shadow: var(--shadow-sm);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
 }
 
 .product-card:hover {
@@ -994,36 +988,38 @@ html, body {
 .product-img-container {
   position: relative;
   width: 100%;
-  height: 125px;
+  aspect-ratio: 1 / 1;
   background: #f8fafc;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .product-img-render {
-  max-width: 85%;
-  max-height: 85%;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: var(--radius-sm);
 }
 
 .product-emoji-render {
-  font-size: 44px;
+  font-size: 32px;
 }
 
 /* Discount Pill - Properly Positioned */
 .discount-pill {
   position: absolute;
-  top: 6px;
-  left: 6px;
+  top: 4px;
+  left: 4px;
   background: var(--primary);
   color: #ffffff;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 800;
-  padding: 3px 6px;
+  padding: 2px 4px;
   border-radius: 4px;
   letter-spacing: 0.3px;
   z-index: 2;
@@ -1032,10 +1028,10 @@ html, body {
 
 .dietary-badge-corner {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 16px;
-  height: 16px;
+  top: 4px;
+  right: 4px;
+  width: 14px;
+  height: 14px;
   border-radius: 3px;
   display: flex;
   align-items: center;
@@ -1046,19 +1042,19 @@ html, body {
 }
 
 .veg-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background-color: var(--veg-color);
-  border: 1.5px solid #ffffff;
+  border: 1px solid #ffffff;
 }
 
 .nonveg-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background-color: var(--non-veg-color);
-  border: 1.5px solid #ffffff;
+  border: 1px solid #ffffff;
 }
 
 .product-info-box {
@@ -1068,23 +1064,24 @@ html, body {
 }
 
 .product-weight-tag {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
   font-weight: 600;
   margin-bottom: 2px;
 }
 
 .product-title-text {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--text-main);
-  line-height: 1.35;
-  margin-bottom: 8px;
+  line-height: 1.25;
+  margin-bottom: 6px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 34px;
+  min-height: 28px;
 }
 
 .product-bottom-row {
@@ -1092,7 +1089,7 @@ html, body {
   align-items: flex-end;
   justify-content: space-between;
   margin-top: auto;
-  padding-top: 6px;
+  padding-top: 4px;
   border-top: 1px solid #f1f5f9;
 }
 
@@ -1102,13 +1099,13 @@ html, body {
 }
 
 .current-price-val {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 800;
   color: var(--text-main);
 }
 
 .original-price-val {
-  font-size: 10px;
+  font-size: 9px;
   color: #94a3b8;
   text-decoration: line-through;
 }
@@ -1118,9 +1115,9 @@ html, body {
   background: var(--primary-light);
   color: var(--primary);
   border: 1.5px solid #bfdbfe;
-  padding: 6px 14px;
+  padding: 4px 8px;
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -1139,8 +1136,8 @@ html, body {
   background: var(--primary);
   color: #ffffff;
   border-radius: var(--radius-sm);
-  padding: 3px 6px;
-  gap: 8px;
+  padding: 2px 4px;
+  gap: 4px;
   box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
 }
 
@@ -1156,8 +1153,31 @@ html, body {
 }
 
 .stepper-qty-val {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
+}
+
+@media (min-width: 768px) {
+  .product-card {
+    padding: 10px;
+  }
+  .product-title-text {
+    font-size: 13px;
+    min-height: 34px;
+  }
+  .current-price-val {
+    font-size: 14px;
+  }
+  .original-price-val {
+    font-size: 10px;
+  }
+  .btn-add-action {
+    padding: 6px 14px;
+    font-size: 12px;
+  }
+  .product-emoji-render {
+    font-size: 44px;
+  }
 }
 
 /* Floating Bottom Cart Action Bar */
@@ -1234,9 +1254,10 @@ html, body {
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(4px);
-  z-index: 100;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 9990;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease;
@@ -1259,14 +1280,14 @@ html, body {
   background: #ffffff;
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
-  z-index: 301;
+  z-index: 9995;
   transform: translateY(100%);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
   max-height: 92vh;
   overflow: hidden;
-  box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.25);
   box-sizing: border-box;
 }
 

@@ -82,8 +82,8 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
 
   return (
     <>
-      <div className="drawer-backdrop active" style={{ zIndex: 200 }} onClick={onClose} />
-      <div className="drawer-content active" style={{ zIndex: 201, maxHeight: '90%', height: '85%' }}>
+      <div className="drawer-backdrop active" style={{ zIndex: 9990 }} onClick={onClose} />
+      <div className="drawer-content active" style={{ zIndex: 9995, maxHeight: '90%', height: '85%' }}>
         {/* Header */}
         <div className="drawer-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

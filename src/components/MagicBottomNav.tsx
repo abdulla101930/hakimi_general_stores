@@ -4,15 +4,16 @@ import { Home, ShoppingBag, Package } from 'lucide-react';
 
 interface MagicBottomNavProps {
   onOpenPWA?: () => void;
+  isModalOpen?: boolean;
 }
 
-export const MagicBottomNav: React.FC<MagicBottomNavProps> = () => {
-  const { currentView, setView, isLoginOpen, cart } = useApp();
+export const MagicBottomNav: React.FC<MagicBottomNavProps> = ({ isModalOpen }) => {
+  const { currentView, setView, isLoginOpen, isCartOpen, cart } = useApp();
 
   const totalItems = Object.values(cart).reduce((sum, count) => sum + count, 0);
 
-  // If login modal is open, hide the bottom navbar so it never overlaps the OTP box
-  if (isLoginOpen) return null;
+  // If any modal or drawer is open, hide the bottom navbar so it never overlaps popups
+  if (isLoginOpen || isCartOpen || isModalOpen) return null;
 
   // 3 Menus only: Home, Cart, Previous Orders
   const tabs = [

@@ -61,8 +61,8 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
 
   return (
     <>
-      <div className="drawer-backdrop active" style={{ zIndex: 300 }} onClick={onClose} />
-      <div className="drawer-content active" style={{ zIndex: 301, maxHeight: '85%' }}>
+      <div className="drawer-backdrop active" style={{ zIndex: 9990 }} onClick={onClose} />
+      <div className="drawer-content active" style={{ zIndex: 9995, maxHeight: '85%' }}>
         <div className="drawer-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Smartphone size={20} color="var(--primary)" />

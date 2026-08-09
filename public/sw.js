@@ -1,7 +1,5 @@
-const CACHE_NAME = 'hakimi-pwa-v3';
+const CACHE_NAME = 'hakimi-pwa-v4';
 const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
   './manifest.webmanifest',
   './logo.png',
   './pwa-192x192.png',
@@ -33,6 +31,48 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+
+  // Network-First for HTML/navigation requests so changes are immediately visible
+  if (event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html') || url.pathname.endsWith('index.html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match(event.request) || caches.match('./index.html') || caches.match('./');
+        })
+    );
+    return;
+  }
+
+  // Network-First for JS/CSS assets so updates are always fetched first
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Cache-First for static assets (images, icons)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -47,8 +87,6 @@ self.addEventListener('fetch', (event) => {
           cache.put(event.request, responseToCache);
         });
         return response;
-      }).catch(() => {
-        return caches.match('./') || caches.match('./index.html');
       });
     })
   );
