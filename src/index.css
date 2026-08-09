@@ -950,27 +950,29 @@ html, body {
   transition: width 0.3s ease;
 }
 
-/* Product Cards Grid - Exactly 4 Products per Line Across All Screens */
+/* Product Cards Grid - Strictly 4 Products per Line Across All Mobile & Desktop Screens */
 .products-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  padding: 0 8px 20px 8px;
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 4px !important;
+  padding: 4px 4px 20px 4px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 @media (min-width: 768px) {
   .products-grid {
-    gap: 16px;
-    padding: 0 16px 20px 16px;
+    gap: 12px !important;
+    padding: 8px 16px 20px 16px !important;
   }
 }
 
-/* Modern Product Card Design */
+/* Modern Product Card Design - Equal Width 4-Column Grid Cards */
 .product-card {
   background: #ffffff;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
-  padding: 6px;
+  padding: 4px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -978,6 +980,9 @@ html, body {
   box-shadow: var(--shadow-sm);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   width: 100%;
+  min-width: 0 !important; /* CRITICAL: Prevents wide image content from squishing adjacent columns */
+  box-sizing: border-box !important;
+  overflow: hidden;
 }
 
 .product-card:hover {
@@ -988,70 +993,77 @@ html, body {
 .product-img-container {
   position: relative;
   width: 100%;
+  min-width: 0;
   aspect-ratio: 1 / 1;
-  background: #f8fafc;
+  background: #ffffff;
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+  padding: 2px;
+  border: 1px solid #f1f5f9;
+  box-sizing: border-box;
 }
 
 .product-img-render {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  max-width: 95%;
+  max-height: 95%;
+  width: auto;
+  height: auto;
+  object-fit: contain; /* CRITICAL: Preserves full package image without zooming in or cropping edges */
   object-position: center;
   border-radius: var(--radius-sm);
 }
 
 .product-emoji-render {
-  font-size: 32px;
+  font-size: 28px;
 }
 
 /* Discount Pill - Properly Positioned */
 .discount-pill {
   position: absolute;
-  top: 4px;
-  left: 4px;
+  top: 2px;
+  left: 2px;
   background: var(--primary);
   color: #ffffff;
-  font-size: 8px;
+  font-size: 7px;
   font-weight: 800;
-  padding: 2px 4px;
-  border-radius: 4px;
-  letter-spacing: 0.3px;
+  padding: 1px 3px;
+  border-radius: 3px;
+  letter-spacing: 0.2px;
   z-index: 2;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
 }
 
 .dietary-badge-corner {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
+  top: 2px;
+  right: 22px;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   z-index: 2;
 }
 
 .veg-dot {
-  width: 7px;
-  height: 7px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background-color: var(--veg-color);
   border: 1px solid #ffffff;
 }
 
 .nonveg-dot {
-  width: 7px;
-  height: 7px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background-color: var(--non-veg-color);
   border: 1px solid #ffffff;
@@ -1061,66 +1073,77 @@ html, body {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0;
 }
 
 .product-weight-tag {
-  font-size: 10px;
+  font-size: 8.5px;
   color: var(--text-muted);
   font-weight: 600;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .product-title-text {
-  font-size: 11px;
+  font-size: 9.5px;
   font-weight: 700;
   color: var(--text-main);
-  line-height: 1.25;
-  margin-bottom: 6px;
+  line-height: 1.15;
+  margin-bottom: 4px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 28px;
+  min-height: 22px;
+  word-break: break-word;
 }
 
 .product-bottom-row {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   margin-top: auto;
-  padding-top: 4px;
+  padding-top: 3px;
   border-top: 1px solid #f1f5f9;
+  min-width: 0;
+  gap: 2px;
 }
 
 .product-price-column {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .current-price-val {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 800;
   color: var(--text-main);
+  white-space: nowrap;
 }
 
 .original-price-val {
-  font-size: 9px;
+  font-size: 7.5px;
   color: #94a3b8;
   text-decoration: line-through;
+  white-space: nowrap;
 }
 
 /* ADD Button & Stepper Controls */
 .btn-add-action {
   background: var(--primary-light);
   color: var(--primary);
-  border: 1.5px solid #bfdbfe;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  font-size: 11px;
+  border: 1px solid #bfdbfe;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 9px;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .btn-add-action:hover {
@@ -1135,10 +1158,10 @@ html, body {
   justify-content: space-between;
   background: var(--primary);
   color: #ffffff;
-  border-radius: var(--radius-sm);
-  padding: 2px 4px;
-  gap: 4px;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+  border-radius: 4px;
+  padding: 1px 3px;
+  gap: 2px;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.3);
 }
 
 .btn-stepper-sub {
@@ -1149,34 +1172,34 @@ html, body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 2px;
+  padding: 1px;
 }
 
 .stepper-qty-val {
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 800;
 }
 
 @media (min-width: 768px) {
   .product-card {
-    padding: 10px;
+    padding: 8px;
   }
   .product-title-text {
-    font-size: 13px;
-    min-height: 34px;
+    font-size: 12px;
+    min-height: 30px;
   }
   .current-price-val {
-    font-size: 14px;
+    font-size: 13px;
   }
   .original-price-val {
-    font-size: 10px;
+    font-size: 9.5px;
   }
   .btn-add-action {
-    padding: 6px 14px;
-    font-size: 12px;
+    padding: 4px 10px;
+    font-size: 11px;
   }
   .product-emoji-render {
-    font-size: 44px;
+    font-size: 40px;
   }
 }
 

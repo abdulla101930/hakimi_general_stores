@@ -184,7 +184,7 @@ export const Catalog: React.FC = () => {
       </div>
 
       {/* 6. Product Cards Grid */}
-      <div className="products-grid" style={{ padding: '16px' }}>
+      <div className="products-grid">
         {filteredProducts.length > 0 ? (
           filteredProducts.map(product => (
             <ProductCard key={product.id} product={product} />

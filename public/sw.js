@@ -1,4 +1,6 @@
-const CACHE_NAME = 'hakimi-pwa-v4';
+const CACHE_NAME = 'hakimi-pwa-v6-network-only';
+
+// Assets that can be cached for offline fallback (only static icons)
 const ASSETS_TO_CACHE = [
   './manifest.webmanifest',
   './logo.png',
@@ -8,6 +10,7 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE).catch(err => {
@@ -15,15 +18,13 @@ self.addEventListener('install', (event) => {
       });
     })
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
+  // Purge ALL existing caches to force fresh download
   event.waitUntil(
     caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      );
+      return Promise.all(keys.map((key) => caches.delete(key)));
     })
   );
   self.clients.claim();
@@ -34,19 +35,18 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Network-First for HTML/navigation requests so changes are immediately visible
-  if (event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html') || url.pathname.endsWith('index.html')) {
+  // ALWAYS fetch HTML, JS, and CSS directly from Network (NO CACHING)
+  // This guarantees all deployment updates are visible instantly without incognito mode!
+  if (
+    event.request.mode === 'navigate' || 
+    event.request.headers.get('accept')?.includes('text/html') || 
+    url.pathname.endsWith('index.html') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.includes('/assets/')
+  ) {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-          }
-          return response;
-        })
+      fetch(event.request, { cache: 'no-store' })
         .catch(() => {
           return caches.match(event.request) || caches.match('./index.html') || caches.match('./');
         })
@@ -54,40 +54,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-First for JS/CSS assets so updates are always fetched first
-  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-          }
-          return response;
-        })
-        .catch(() => caches.match(event.request))
-    );
-    return;
-  }
-
-  // Cache-First for static assets (images, icons)
+  // Fallback for static image assets
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
-      return fetch(event.request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
-        return response;
-      });
+      return fetch(event.request).catch(() => null);
     })
   );
 });
