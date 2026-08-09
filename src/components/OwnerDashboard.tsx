@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { FOOD_SUBDIVISIONS as FOOD_SUBS, HYGIENE_SUBDIVISIONS as HYG_SUBS } from './Catalog';
 import type { Product, Order } from '../context/AppContext';
-import { Plus, Edit, Trash2, Package, Truck, Save, User } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Truck, Save, User, VolumeX, Bell } from 'lucide-react';
+import { stopOwnerRingingAlarm } from '../App';
 
 export const OwnerDashboard: React.FC = () => {
   const { 
@@ -222,6 +223,96 @@ export const OwnerDashboard: React.FC = () => {
         {activeTab === 'orders' && (
           <div className="admin-orders-list">
             
+            {/* Unaccepted Orders Alarm Banner */}
+            {orders.some(o => o.status === 'placed') && (
+              <div style={{
+                backgroundColor: '#fef2f2',
+                border: '2px solid #ef4444',
+                borderRadius: '12px',
+                padding: '12px 16px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    backgroundColor: '#ef4444',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff'
+                  }}>
+                    <Bell size={20} />
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#991b1b', margin: 0 }}>
+                      🔔 UNACCEPTED ORDER RECEIVED!
+                    </h4>
+                    <p style={{ fontSize: '11px', color: '#b91c1c', margin: '2px 0 0' }}>
+                      Ringing alarm active. (Repeats every 5 minutes until order is accepted)
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => stopOwnerRingingAlarm()}
+                    style={{
+                      backgroundColor: '#ffffff',
+                      color: '#ef4444',
+                      border: '1px solid #fca5a5',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <VolumeX size={14} />
+                    <span>Mute Sound</span>
+                  </button>
+
+                  {/* Quick Accept First Placed Order */}
+                  {(() => {
+                    const unaccepted = orders.find(o => o.status === 'placed');
+                    if (!unaccepted) return null;
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateOrderStatus(unaccepted.id, 'packing');
+                          stopOwnerRingingAlarm();
+                        }}
+                        style={{
+                          backgroundColor: '#16a34a',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '6px 14px',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)'
+                        }}
+                      >
+                        Accept Order (#{unaccepted.id})
+                      </button>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
             {/* Customer Filter Selector */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>

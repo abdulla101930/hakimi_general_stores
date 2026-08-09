@@ -67,6 +67,8 @@ export interface Order {
   instructions?: string;
   driverPosition?: { x: number; y: number }; // Simulated GPS
   eta?: number; // Estimated minutes remaining
+  paymentMethod?: 'COD' | 'ONLINE';
+  paymentStatus?: 'Pending' | 'Paid (Online)';
 }
 
 export interface Coupon {
@@ -103,7 +105,7 @@ interface AppContextType {
   setSelectedAddress: (addr: Address) => void;
   applyCoupon: (code: string) => { success: boolean; message: string };
   removeCoupon: () => void;
-  createOrder: (instructions: string) => Order;
+  createOrder: (instructions: string, paymentMethod?: 'COD' | 'ONLINE', paymentStatus?: 'Pending' | 'Paid (Online)') => Order;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   addNewAddress: (addr: Address) => void;
   
@@ -749,7 +751,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAppliedCoupon(null);
   };
 
-  const createOrder = (instructions: string) => {
+  const createOrder = (
+    instructions: string, 
+    paymentMethod: 'COD' | 'ONLINE' = 'COD', 
+    paymentStatus: 'Pending' | 'Paid (Online)' = 'Pending'
+  ) => {
     if (!user) throw new Error('Must be logged in to place an order.');
     if (!selectedAddress) throw new Error('Please select or add a delivery address.');
 
@@ -808,7 +814,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       },
       instructions: instructions || undefined,
       driverPosition: { x: 15, y: 85 },
-      eta: 15
+      eta: 15,
+      paymentMethod,
+      paymentStatus
     };
 
     if (isConfigured) {

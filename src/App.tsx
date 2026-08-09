@@ -20,6 +20,65 @@ interface Toast {
   type: 'info' | 'success' | 'warning';
 }
 
+let alarmIntervalId: any = null;
+let alarmTimeoutId: any = null;
+
+export const startOwnerRingingAlarm = () => {
+  stopOwnerRingingAlarm();
+
+  const playSingleChime = () => {
+    try {
+      const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtxClass) return;
+      const audioCtx = new AudioCtxClass();
+      const osc1 = audioCtx.createOscillator();
+      const osc2 = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      osc1.connect(gainNode);
+      osc2.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      osc1.type = 'triangle';
+      osc2.type = 'sine';
+
+      const now = audioCtx.currentTime;
+      // High pitch double-chime bell ring (Store Order Alarm)
+      osc1.frequency.setValueAtTime(880, now);
+      osc1.frequency.setValueAtTime(1174.66, now + 0.15);
+      osc2.frequency.setValueAtTime(1318.51, now + 0.3);
+
+      gainNode.gain.setValueAtTime(0.25, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+
+      osc1.start(now);
+      osc2.start(now + 0.15);
+      osc1.stop(now + 0.9);
+      osc2.stop(now + 0.9);
+    } catch (e) {
+      console.warn("Alarm chime audio policy:", e);
+    }
+  };
+
+  playSingleChime();
+  alarmIntervalId = setInterval(playSingleChime, 1200);
+
+  alarmTimeoutId = setTimeout(() => {
+    stopOwnerRingingAlarm();
+  }, 60000); // Ring continuously for 1 minute (60 seconds)
+};
+
+export const stopOwnerRingingAlarm = () => {
+  if (alarmIntervalId) {
+    clearInterval(alarmIntervalId);
+    alarmIntervalId = null;
+  }
+  if (alarmTimeoutId) {
+    clearTimeout(alarmTimeoutId);
+    alarmTimeoutId = null;
+  }
+};
+
 const MainLayout: React.FC = () => {
   const { currentView, cart, activeOrder, setView, role, orders, addNewAddress, setSelectedAddress } = useApp();
   
@@ -167,6 +226,7 @@ const MainLayout: React.FC = () => {
     setLastOrderStatus(activeOrder.status);
   }, [activeOrder?.status]);
 
+  // 1. Owner New Order Alarm (Rings continuously for 1 min on new order)
   useEffect(() => {
     if (role !== 'owner') return;
 
@@ -174,6 +234,9 @@ const MainLayout: React.FC = () => {
       const newestOrder = orders[0];
       const alertMsg = `🔔 NEW ORDER #${newestOrder?.id} received! (₹${newestOrder?.bill.grandTotal})`;
       addToast(alertMsg, 'info');
+
+      // Play 1-minute ringing alarm for owner
+      startOwnerRingingAlarm();
 
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('Hakimi Supermarket - New Order!', {
@@ -184,6 +247,31 @@ const MainLayout: React.FC = () => {
     }
     setLastOrdersCount(orders.length);
   }, [orders.length, role]);
+
+  // 2. Owner Unaccepted Order 5-Minute Reminder Alarm
+  useEffect(() => {
+    if (role !== 'owner') return;
+
+    const checkAndRingUnaccepted = () => {
+      const hasUnaccepted = orders.some(o => o.status === 'placed');
+      if (hasUnaccepted) {
+        startOwnerRingingAlarm();
+        addToast('🔔 REMINDER: Unaccepted order waiting! Alarm ringing...', 'warning');
+      } else {
+        stopOwnerRingingAlarm();
+      }
+    };
+
+    // Auto-stop alarm if all orders are accepted
+    const hasUnaccepted = orders.some(o => o.status === 'placed');
+    if (!hasUnaccepted) {
+      stopOwnerRingingAlarm();
+    }
+
+    // Interval to repeat alarm every 5 minutes (300,000 ms) for unaccepted orders
+    const intervalId = setInterval(checkAndRingUnaccepted, 300000);
+    return () => clearInterval(intervalId);
+  }, [orders, role]);
 
   const handleSelectMapAddress = (addr: Address) => {
     addNewAddress(addr);

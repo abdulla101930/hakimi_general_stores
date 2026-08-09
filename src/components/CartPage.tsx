@@ -15,6 +15,8 @@ import {
   ChevronRight
 } from 'lucide-react';
 
+import { PaymentModal } from './PaymentModal';
+
 interface CartPageProps {
   onOpenMap: () => void;
 }
@@ -39,6 +41,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
 
   const [couponCode, setCouponCode] = useState('');
   const [selectedInstruction, setSelectedInstruction] = useState<string>('Avoid calling');
+  const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
 
   // Filter items in cart
   const cartItems = Object.entries(cart)
@@ -53,7 +56,8 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
   const isFreeDelivery = itemsTotal >= freeDeliveryThreshold;
   const deliveryCharge = isFreeDelivery ? 0 : 30;
   const handlingFee = 0;
-  const grandTotal = Math.max(0, itemsTotal - discountAmount + deliveryCharge + handlingFee);
+  const smallCartCharge = itemsTotal < 99 ? 15 : 0;
+  const grandTotal = Math.max(0, itemsTotal - discountAmount + deliveryCharge + handlingFee + smallCartCharge);
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.qty, 0);
 
@@ -68,7 +72,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
     }
   };
 
-  const handleCheckout = () => {
+  const handleOpenPaymentGateway = () => {
     if (!user) {
       setLoginOpen(true);
       return;
@@ -77,9 +81,14 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
       setLoginOpen(true);
       return;
     }
+    setPaymentModalOpen(true);
+  };
 
-    // Create order object
-    const newOrder = createOrder(selectedInstruction);
+  const handleProcessOrderPayment = (paymentMethod: 'COD' | 'ONLINE', paymentDetails?: string) => {
+    setPaymentModalOpen(false);
+
+    const paymentStatus = paymentMethod === 'ONLINE' ? 'Paid (Online)' : 'Pending';
+    const newOrder = createOrder(selectedInstruction, paymentMethod, paymentStatus);
 
     // Format WhatsApp message
     const storeNumber = '919993949604'; // Owner WhatsApp contact (+91 99939 49604)
@@ -87,7 +96,9 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
     msg += `------------------------------------\n`;
     msg += `👤 *Customer:* ${newOrder.customerName} (${newOrder.customerPhone})\n`;
     msg += `📍 *Delivery Address:* ${newOrder.address.type} - ${newOrder.address.details}\n`;
-    msg += `📋 *Instruction:* ${selectedInstruction}\n\n`;
+    msg += `📋 *Instruction:* ${selectedInstruction}\n`;
+    msg += `💳 *Payment Method:* ${paymentMethod === 'ONLINE' ? '🟢 ONLINE PAYMENT' : '💵 CASH ON DELIVERY (COD)'}\n`;
+    msg += `📊 *Payment Status:* ${paymentStatus} ${paymentDetails ? `(${paymentDetails})` : ''}\n\n`;
     msg += `📦 *ORDER ITEMS:*\n`;
 
     newOrder.items.forEach((item, index) => {
@@ -428,14 +439,14 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
             <button
               type="button"
               className="btn-place-whatsapp-order"
-              onClick={handleCheckout}
+              onClick={handleOpenPaymentGateway}
             >
               <div className="checkout-btn-left">
-                <span className="pay-total-val">₹{grandTotal + (itemsTotal < 99 ? 15 : 0)}</span>
+                <span className="pay-total-val">₹{grandTotal}</span>
                 <span className="pay-subtitle">TOTAL TO PAY</span>
               </div>
               <div className="checkout-btn-right">
-                <span>Place Order via WhatsApp</span>
+                <span>Proceed to Payment</span>
                 <ChevronRight size={18} />
               </div>
             </button>
@@ -443,6 +454,16 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
 
         </div>
       </div>
+
+      {/* Integrated Payment Gateway Modal */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        amount={grandTotal}
+        customerName={user?.name || 'Customer'}
+        customerPhone={user?.phone || ''}
+        onPaymentSuccess={handleProcessOrderPayment}
+      />
     </div>
   );
 };

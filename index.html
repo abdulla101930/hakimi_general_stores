@@ -26,18 +26,19 @@
 
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          // Force bypass cache when checking for SW updates
-          navigator.serviceWorker.register('./sw.js?v=' + Date.now(), { updateViaCache: 'none' }).then((registration) => {
+          // Static SW registration path with updateViaCache none
+          navigator.serviceWorker.register('./sw.js?v=v6', { updateViaCache: 'none' }).then((registration) => {
             registration.update();
           }).catch(err => {
             console.log('Service Worker Registration Failed:', err);
           });
         });
 
-        let refreshing = false;
+        // Controllerchange listener with session storage reload guard to prevent loops
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-          if (!refreshing) {
-            refreshing = true;
+          const reloadedKey = 'sw_controller_reloaded';
+          if (!sessionStorage.getItem(reloadedKey)) {
+            sessionStorage.setItem(reloadedKey, 'true');
             window.location.reload();
           }
         });
