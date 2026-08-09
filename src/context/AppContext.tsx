@@ -37,6 +37,7 @@ export interface Address {
   type: string;
   details: string;
   gps?: { lat: number; lng: number };
+  distanceKm?: number;
 }
 
 export interface BillDetails {
@@ -93,6 +94,18 @@ interface AppContextType {
   isCartOpen: boolean;
   freeDeliveryThreshold: number;
   setFreeDeliveryThreshold: (threshold: number) => void;
+  deliveryPricingMode: 'flat' | 'distance';
+  flatDeliveryCharge: number;
+  distanceRateMultiplier: number;
+  setDeliverySettings: (settings: {
+    freeDeliveryThreshold?: number;
+    deliveryPricingMode?: 'flat' | 'distance';
+    flatDeliveryCharge?: number;
+    distanceRateMultiplier?: number;
+  }) => void;
+  getDeliveryCharge: (itemsTotal: number, address?: Address | null) => number;
+  isMaintenanceMode: boolean;
+  toggleMaintenanceMode: (enabled?: boolean) => void;
   login: (phone: string, name: string, addresses: Address[]) => void;
   logout: () => void;
   setCartOpen: (open: boolean) => void;
@@ -500,16 +513,96 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return 'catalog';
   });
 
-  // Owner Configurable Free Delivery & Convenience Fee Threshold (Default ₹200)
+  // Owner Configurable Free Delivery & Delivery Fee Settings
   const [freeDeliveryThreshold, setFreeDeliveryThresholdState] = useState<number>(() => {
     const saved = localStorage.getItem('hakimi_free_delivery_threshold');
     return saved ? parseFloat(saved) : 200;
+  });
+
+  const [deliveryPricingMode, setDeliveryPricingMode] = useState<'flat' | 'distance'>(() => {
+    const saved = localStorage.getItem('hakimi_delivery_mode');
+    return (saved as 'flat' | 'distance') || 'flat';
+  });
+
+  const [flatDeliveryCharge, setFlatDeliveryCharge] = useState<number>(() => {
+    const saved = localStorage.getItem('hakimi_flat_delivery_charge');
+    return saved ? parseFloat(saved) : 30;
+  });
+
+  const [distanceRateMultiplier, setDistanceRateMultiplier] = useState<number>(() => {
+    const saved = localStorage.getItem('hakimi_distance_rate_multiplier');
+    return saved ? parseFloat(saved) : 10; // Default ₹10 / km
   });
 
   const setFreeDeliveryThreshold = (val: number) => {
     logOwnerAction('DELIVERY_THRESHOLD_UPDATED', { oldThreshold: freeDeliveryThreshold, newThreshold: val });
     setFreeDeliveryThresholdState(val);
     localStorage.setItem('hakimi_free_delivery_threshold', val.toString());
+  };
+
+  const setDeliverySettings = (settings: {
+    freeDeliveryThreshold?: number;
+    deliveryPricingMode?: 'flat' | 'distance';
+    flatDeliveryCharge?: number;
+    distanceRateMultiplier?: number;
+  }) => {
+    if (settings.freeDeliveryThreshold !== undefined) {
+      setFreeDeliveryThresholdState(settings.freeDeliveryThreshold);
+      localStorage.setItem('hakimi_free_delivery_threshold', settings.freeDeliveryThreshold.toString());
+    }
+    if (settings.deliveryPricingMode !== undefined) {
+      setDeliveryPricingMode(settings.deliveryPricingMode);
+      localStorage.setItem('hakimi_delivery_mode', settings.deliveryPricingMode);
+    }
+    if (settings.flatDeliveryCharge !== undefined) {
+      setFlatDeliveryCharge(settings.flatDeliveryCharge);
+      localStorage.setItem('hakimi_flat_delivery_charge', settings.flatDeliveryCharge.toString());
+    }
+    if (settings.distanceRateMultiplier !== undefined) {
+      setDistanceRateMultiplier(settings.distanceRateMultiplier);
+      localStorage.setItem('hakimi_distance_rate_multiplier', settings.distanceRateMultiplier.toString());
+    }
+    logOwnerAction('DELIVERY_SETTINGS_UPDATED', settings);
+  };
+
+  const getDeliveryCharge = (itemsTotal: number, address?: Address | null): number => {
+    if (itemsTotal >= freeDeliveryThreshold) {
+      return 0;
+    }
+
+    if (deliveryPricingMode === 'distance') {
+      let distanceKm = address?.distanceKm || 3; // Default 3 km
+      if (address?.gps?.lat && address?.gps?.lng) {
+        const shopLocation = { lat: 22.7196, lng: 75.8577 };
+        const R = 6371; // Earth radius in km
+        const dLat = ((address.gps.lat - shopLocation.lat) * Math.PI) / 180;
+        const dLng = ((address.gps.lng - shopLocation.lng) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos((shopLocation.lat * Math.PI) / 180) *
+            Math.cos((address.gps.lat * Math.PI) / 180) *
+            Math.sin(dLng / 2) *
+            Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        distanceKm = Math.max(1, Math.round(R * c * 10) / 10);
+      }
+      // Distance charge: distanceInKm * distanceRateMultiplier
+      return Math.max(10, Math.round(distanceKm * distanceRateMultiplier));
+    }
+
+    return flatDeliveryCharge;
+  };
+
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('hakimi_maintenance_mode');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  const toggleMaintenanceMode = (enabled?: boolean) => {
+    const nextVal = enabled !== undefined ? enabled : !isMaintenanceMode;
+    setIsMaintenanceMode(nextVal);
+    localStorage.setItem('hakimi_maintenance_mode', JSON.stringify(nextVal));
+    logOwnerAction('MAINTENANCE_MODE_TOGGLED' as any, { enabled: nextVal });
   };
 
   const [selectedAddress, setSelectedAddressState] = useState<Address | null>(() => {
@@ -734,15 +827,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
       setAppliedCoupon(coupon);
       return { success: true, message: 'WELCOME50 coupon applied!' };
-    } else if (uppercaseCode === 'FREEGO') {
+    } else if (uppercaseCode === 'FREEGO' || uppercaseCode === 'FREEDELIVERY') {
       const coupon: Coupon = {
-        code: 'FREEGO',
+        code: uppercaseCode,
         description: 'Free handling & delivery charges!',
         discountType: 'free_shipping',
         value: 0
       };
       setAppliedCoupon(coupon);
-      return { success: true, message: 'FREEGO coupon applied!' };
+      return { success: true, message: `${uppercaseCode} coupon applied successfully!` };
     }
     return { success: false, message: 'Invalid coupon code.' };
   };
@@ -779,13 +872,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     });
 
-    let deliveryCharge = 30;
-
-    // Check against owner-configurable threshold
-    if (itemsTotal >= freeDeliveryThreshold) {
-      deliveryCharge = 0;
-      handlingCharge = 0; // Waive both delivery and handling fee when threshold unlocked!
-    }
+    let deliveryCharge = getDeliveryCharge(itemsTotal, selectedAddress);
 
     let discount = 0;
     if (appliedCoupon) {
@@ -948,6 +1035,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isCartOpen,
         freeDeliveryThreshold,
         setFreeDeliveryThreshold,
+        deliveryPricingMode,
+        flatDeliveryCharge,
+        distanceRateMultiplier,
+        setDeliverySettings,
+        getDeliveryCharge,
+        isMaintenanceMode,
+        toggleMaintenanceMode,
         login,
         logout,
         setCartOpen,

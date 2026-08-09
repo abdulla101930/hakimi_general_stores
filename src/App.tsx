@@ -9,6 +9,7 @@ import { OwnerDashboard } from './components/OwnerDashboard';
 import { MapPickerModal } from './components/MapPickerModal';
 import { PWAInstallModal } from './components/PWAInstallModal';
 import { DevLogsModal } from './components/DevLogsModal';
+import { MaintenancePage } from './components/MaintenancePage';
 import { CartPage } from './components/CartPage';
 import { MagicBottomNav } from './components/MagicBottomNav';
 import { ArrowRight } from 'lucide-react';
@@ -80,7 +81,7 @@ export const stopOwnerRingingAlarm = () => {
 };
 
 const MainLayout: React.FC = () => {
-  const { currentView, cart, activeOrder, setView, role, orders, addNewAddress, setSelectedAddress } = useApp();
+  const { currentView, cart, activeOrder, setView, role, orders, addNewAddress, setSelectedAddress, isMaintenanceMode } = useApp();
   
   // Modals state
   const [isMapOpen, setMapOpen] = useState(false);
@@ -332,7 +333,9 @@ const MainLayout: React.FC = () => {
       </div>
 
       {/* Main View Area */}
-      {currentView === 'admin' ? (
+      {isMaintenanceMode && role !== 'owner' ? (
+        <MaintenancePage />
+      ) : currentView === 'admin' ? (
         <OwnerDashboard />
       ) : currentView === 'tracking' ? (
         <DeliveryTracking />

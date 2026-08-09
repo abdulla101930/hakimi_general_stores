@@ -23,7 +23,8 @@ export const Cart: React.FC<CartProps> = ({ onOpenMap }) => {
     removeCoupon,
     createOrder,
     addNewAddress,
-    freeDeliveryThreshold
+    freeDeliveryThreshold,
+    getDeliveryCharge
   } = useApp();
 
   const [instructions, setInstructions] = useState<string[]>([]);
@@ -103,17 +104,12 @@ export const Cart: React.FC<CartProps> = ({ onOpenMap }) => {
   }, 0);
 
   // Billing factors
-  let handlingCharge = cartItems.reduce((sum, item) => sum + (item.product!.handlingFee || 0) * item.quantity, 0);
-  let deliveryCharge = 30;
+  let handlingCharge = 0;
+  let deliveryCharge = getDeliveryCharge(itemsTotal, selectedAddress);
 
   // Dynamic Free Delivery Threshold
   const progressToFreeDelivery = Math.min(100, (itemsTotal / freeDeliveryThreshold) * 100);
   const remainingForFreeDelivery = Math.max(0, freeDeliveryThreshold - itemsTotal);
-  
-  if (itemsTotal >= freeDeliveryThreshold) {
-    deliveryCharge = 0;
-    handlingCharge = 0; // Waived at free delivery threshold!
-  }
 
   // Coupon calculations
   let discount = 0;

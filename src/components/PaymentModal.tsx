@@ -6,7 +6,8 @@ import {
   CheckCircle, 
   ArrowRight, 
   Lock,
-  Banknote
+  Banknote,
+  Copy
 } from 'lucide-react';
 
 interface PaymentModalProps {
@@ -29,22 +30,46 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const [selectedTab, setSelectedTab] = useState<'online' | 'cod'>('online');
   const [txnIdInput, setTxnIdInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   if (!isOpen) return null;
 
-  // Merchant UPI ID for Hakimi Supermarket
-  const storeUpiId = '9993949604@okbizaxis';
+  // Merchant Payment Account Details (HDFC Bank - 7162)
+  const storeUpiId = '9893264182-2@ybl';
+  const bankAccountInfo = 'HDFC Bank - 7162';
   const storeName = 'Hakimi General Store';
 
-  // Standard UPI URI format
-  const upiUri = `upi://pay?pa=${encodeURIComponent(storeUpiId)}&pn=${encodeURIComponent(storeName)}&am=${amount}&cu=INR`;
+  const handleCopyUpi = () => {
+    navigator.clipboard.writeText(storeUpiId);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2500);
+  };
+
+  // Standard UPI URI format with 2-decimal amount and clean merchant name
+  const formattedAmount = amount.toFixed(2);
+  const upiUri = `upi://pay?pa=${storeUpiId}&pn=HakimiSupermarket&am=${formattedAmount}&cu=INR`;
 
   // QR Code Image Generator API URL
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiUri)}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiUri)}`;
 
-  const handleUpiAppRedirect = (_appName: string) => {
-    // Open UPI Intent link directly on mobile devices
-    window.location.href = upiUri;
+  const handleUpiAppRedirect = (appName: string) => {
+    // Copy UPI ID to clipboard as immediate fallback
+    try {
+      navigator.clipboard.writeText(storeUpiId);
+    } catch (e) {
+      console.error(e);
+    }
+
+    let deepLink = upiUri;
+    if (appName === 'Google Pay') {
+      deepLink = `tez://upi/pay?pa=${storeUpiId}&pn=HakimiSupermarket&am=${formattedAmount}&cu=INR`;
+    } else if (appName === 'PhonePe') {
+      deepLink = `phonepe://pay?pa=${storeUpiId}&pn=HakimiSupermarket&am=${formattedAmount}&cu=INR`;
+    } else if (appName === 'Paytm') {
+      deepLink = `paytmmp://pay?pa=${storeUpiId}&pn=HakimiSupermarket&am=${formattedAmount}&cu=INR`;
+    }
+    
+    window.location.href = deepLink;
   };
 
   const handleRazorpayCheckout = () => {
@@ -244,15 +269,54 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   </span>
                 </div>
 
-                <div style={{ display: 'inline-block', padding: '6px', background: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                  <img 
-                    src={qrCodeUrl} 
-                    alt="Scan UPI QR Code to Pay" 
-                    style={{ width: '130px', height: '130px', display: 'block' }} 
-                  />
+                <div style={{ 
+                  display: 'inline-block', 
+                  backgroundColor: '#ffffff',
+                  padding: '4px 10px',
+                  borderRadius: '16px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: '#1e3a8a',
+                  marginBottom: '8px'
+                }}>
+                  🏦 {bankAccountInfo}
                 </div>
-                <div style={{ fontSize: '10px', color: '#64748b', marginTop: '6px', fontWeight: 600 }}>
-                  UPI ID: <strong>{storeUpiId}</strong>
+
+                <div>
+                  <div style={{ display: 'inline-block', padding: '6px', background: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                    <img 
+                      src={qrCodeUrl} 
+                      alt="Scan UPI QR Code to Pay" 
+                      style={{ width: '140px', height: '140px', display: 'block' }} 
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '8px' }}>
+                  <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>
+                    UPI ID: <strong>{storeUpiId}</strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyUpi}
+                    style={{
+                      backgroundColor: isCopied ? '#16a34a' : '#eff6ff',
+                      color: isCopied ? '#ffffff' : '#2563eb',
+                      border: '1px solid #bfdbfe',
+                      borderRadius: '6px',
+                      padding: '2px 8px',
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <Copy size={12} />
+                    <span>{isCopied ? 'Copied!' : 'Copy'}</span>
+                  </button>
                 </div>
               </div>
 

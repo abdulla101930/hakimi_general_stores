@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { fetchRemoteAuditLogs, clearLocalAuditLogs } from '../utils/auditLogger';
 import type { AuditLogEntry } from '../utils/auditLogger';
-import { X, RefreshCw, Trash2, Download, Terminal, Search, ShieldCheck } from 'lucide-react';
+import { X, RefreshCw, Trash2, Download, Terminal, Search, ShieldCheck, Wrench } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
 interface DevLogsModalProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface DevLogsModalProps {
 }
 
 export const DevLogsModal: React.FC<DevLogsModalProps> = ({ isOpen, onClose }) => {
+  const { isMaintenanceMode, toggleMaintenanceMode } = useApp();
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterAction, setFilterAction] = useState<string>('ALL');
@@ -140,6 +142,48 @@ export const DevLogsModal: React.FC<DevLogsModalProps> = ({ isOpen, onClose }) =
             }}
           >
             <X size={18} />
+          </button>
+        </div>
+
+        {/* Developer Exclusive Maintenance Mode Control Bar */}
+        <div style={{
+          backgroundColor: isMaintenanceMode ? '#450a0a' : '#0f172a',
+          borderBottom: '1px solid #334155',
+          padding: '12px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Wrench size={18} color={isMaintenanceMode ? '#f87171' : '#38bdf8'} />
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#f8fafc' }}>
+                Developer Control: Store Maintenance Mode
+              </div>
+              <div style={{ fontSize: '11px', color: isMaintenanceMode ? '#fca5a5' : '#94a3b8' }}>
+                Status: {isMaintenanceMode ? '🔴 ACTIVE — Non-owners see Maintenance Page' : '🟢 INACTIVE — Store is online & taking orders'}
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleMaintenanceMode()}
+            style={{
+              backgroundColor: isMaintenanceMode ? '#ef4444' : '#2563eb',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              fontSize: '12px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              boxShadow: isMaintenanceMode ? '0 0 12px rgba(239, 68, 68, 0.5)' : 'none',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            {isMaintenanceMode ? 'TURN OFF MAINTENANCE' : 'TURN ON MAINTENANCE'}
           </button>
         </div>
 

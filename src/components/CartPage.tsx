@@ -36,7 +36,8 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
     appliedCoupon,
     applyCoupon,
     removeCoupon,
-    freeDeliveryThreshold
+    freeDeliveryThreshold,
+    getDeliveryCharge
   } = useApp();
 
   const [couponCode, setCouponCode] = useState('');
@@ -54,10 +55,8 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
   const itemsTotal = cartItems.reduce((sum, item) => sum + item.product.price * item.qty, 0);
   const discountAmount = appliedCoupon ? appliedCoupon.value : 0;
   const isFreeDelivery = itemsTotal >= freeDeliveryThreshold;
-  const deliveryCharge = isFreeDelivery ? 0 : 30;
-  const handlingFee = 0;
-  const smallCartCharge = itemsTotal < 99 ? 15 : 0;
-  const grandTotal = Math.max(0, itemsTotal - discountAmount + deliveryCharge + handlingFee + smallCartCharge);
+  const deliveryCharge = getDeliveryCharge(itemsTotal, selectedAddress);
+  const grandTotal = Math.max(0, itemsTotal - discountAmount + deliveryCharge);
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.qty, 0);
 
@@ -278,6 +277,48 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
           {/* Coupons & Offers */}
           <div id="coupon-section" className="cart-section-box">
             <h2 className="cart-section-title">Coupons & Offers</h2>
+
+            {/* Unlocked Free Delivery Coupon Card */}
+            {isFreeDelivery && (!appliedCoupon || appliedCoupon.code !== 'FREEDELIVERY') && (
+              <div style={{
+                backgroundColor: 'rgba(22, 163, 74, 0.08)',
+                border: '1px dashed #16a34a',
+                borderRadius: '12px',
+                padding: '12px 16px',
+                marginBottom: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '10px'
+              }}>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#15803d', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>🎉 FREE DELIVERY COUPON UNLOCKED!</span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#166534', marginTop: '2px' }}>
+                    Code: <strong>FREEDELIVERY</strong> (Order threshold ₹{freeDeliveryThreshold} met)
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => applyCoupon('FREEDELIVERY')}
+                  style={{
+                    backgroundColor: '#16a34a',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '6px 14px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  Apply Coupon
+                </button>
+              </div>
+            )}
+
             {appliedCoupon ? (
               <div className="applied-coupon-banner">
                 <div>
@@ -338,19 +379,6 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
               <span className="line-val free-green-badge">FREE</span>
             </div>
 
-            {itemsTotal < 99 && (
-              <div className="bill-detail-line small-cart-row">
-                <div>
-                  <div className="line-label">
-                    <span className="line-icon">🛒</span>
-                    <span>Small cart charge</span>
-                  </div>
-                  <span className="small-cart-subtext">No small cart charge on orders above ₹99</span>
-                </div>
-                <span className="line-val">₹15</span>
-              </div>
-            )}
-
             {discountAmount > 0 && (
               <div className="bill-detail-line discount-line">
                 <div className="line-label">
@@ -365,7 +393,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
 
             <div className="bill-detail-line grand-total-line">
               <span className="grand-total-label">Grand total</span>
-              <span className="grand-total-val">₹{grandTotal + (itemsTotal < 99 ? 15 : 0)}</span>
+              <span className="grand-total-val">₹{grandTotal}</span>
             </div>
           </div>
 

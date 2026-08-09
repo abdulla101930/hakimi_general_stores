@@ -5,7 +5,7 @@ export interface AuditLogEntry {
   id: string;
   timestamp: string;
   timestampMs: number;
-  action: 'PRODUCT_ADDED' | 'PRODUCT_UPDATED' | 'PRODUCT_DELETED' | 'ORDER_STATUS_CHANGED' | 'DELIVERY_THRESHOLD_UPDATED' | 'OWNER_LOGIN';
+  action: 'PRODUCT_ADDED' | 'PRODUCT_UPDATED' | 'PRODUCT_DELETED' | 'ORDER_STATUS_CHANGED' | 'DELIVERY_THRESHOLD_UPDATED' | 'DELIVERY_SETTINGS_UPDATED' | 'MAINTENANCE_MODE_TOGGLED' | 'OWNER_LOGIN';
   actor: string;
   details: Record<string, any>;
 }

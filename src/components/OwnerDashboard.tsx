@@ -16,12 +16,18 @@ export const OwnerDashboard: React.FC = () => {
     logout,
     setView,
     freeDeliveryThreshold,
-    setFreeDeliveryThreshold
+    deliveryPricingMode,
+    flatDeliveryCharge,
+    distanceRateMultiplier,
+    setDeliverySettings
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'settings'>('orders');
   const [selectedCustomerPhone, setSelectedCustomerPhone] = useState<string>('all');
   const [thresholdInput, setThresholdInput] = useState<string>(freeDeliveryThreshold.toString());
+  const [pricingModeInput, setPricingModeInput] = useState<'flat' | 'distance'>(deliveryPricingMode || 'flat');
+  const [flatChargeInput, setFlatChargeInput] = useState<string>((flatDeliveryCharge ?? 30).toString());
+  const [distanceRateInput, setDistanceRateInput] = useState<string>((distanceRateMultiplier ?? 10).toString());
   const [thresholdMsg, setThresholdMsg] = useState<string>('');
 
   // Catalog Form state variables
@@ -43,12 +49,30 @@ export const OwnerDashboard: React.FC = () => {
   const handleSaveThreshold = (e: React.FormEvent) => {
     e.preventDefault();
     const val = parseFloat(thresholdInput);
+    const flatVal = parseFloat(flatChargeInput);
+    const distRate = parseFloat(distanceRateInput);
+
     if (isNaN(val) || val < 0) {
-      alert("Please enter a valid numeric threshold.");
+      alert("Please enter a valid numeric free delivery threshold.");
       return;
     }
-    setFreeDeliveryThreshold(val);
-    setThresholdMsg(`✅ Free delivery threshold saved to ₹${val}!`);
+    if (isNaN(flatVal) || flatVal < 0) {
+      alert("Please enter a valid flat delivery charge.");
+      return;
+    }
+    if (isNaN(distRate) || distRate < 0) {
+      alert("Please enter a valid distance rate multiplier.");
+      return;
+    }
+
+    setDeliverySettings({
+      freeDeliveryThreshold: val,
+      deliveryPricingMode: pricingModeInput,
+      flatDeliveryCharge: flatVal,
+      distanceRateMultiplier: distRate
+    });
+
+    setThresholdMsg(`✅ Store Delivery Settings updated successfully!`);
     setTimeout(() => setThresholdMsg(''), 3500);
   };
 
@@ -701,7 +725,7 @@ export const OwnerDashboard: React.FC = () => {
                 </div>
               )}
 
-              <form onSubmit={handleSaveThreshold} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <form onSubmit={handleSaveThreshold} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div className="input-group">
                   <label className="input-label">Free Delivery Threshold Amount (₹)</label>
                   <input
@@ -712,11 +736,57 @@ export const OwnerDashboard: React.FC = () => {
                     placeholder="e.g. 200"
                     required
                   />
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    Orders at or above this amount automatically get FREE delivery!
+                  </span>
                 </div>
 
-                <button type="submit" className="btn-primary" style={{ padding: '10px' }}>
+                <div className="input-group">
+                  <label className="input-label">Delivery Charge Calculation Model</label>
+                  <select
+                    className="form-input"
+                    value={pricingModeInput}
+                    onChange={(e) => setPricingModeInput(e.target.value as 'flat' | 'distance')}
+                    style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)' }}
+                  >
+                    <option value="flat">Standard Flat Delivery Charge (Same fee for all)</option>
+                    <option value="distance">Distance-Based Delivery Charge (Fee per KM from shop)</option>
+                  </select>
+                </div>
+
+                {pricingModeInput === 'flat' ? (
+                  <div className="input-group">
+                    <label className="input-label">Standard Flat Delivery Charge (₹)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={flatChargeInput}
+                      onChange={(e) => setFlatChargeInput(e.target.value)}
+                      placeholder="e.g. 30"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div className="input-group">
+                    <label className="input-label">Distance Rate Multiplier (₹ / km)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      className="form-input"
+                      value={distanceRateInput}
+                      onChange={(e) => setDistanceRateInput(e.target.value)}
+                      placeholder="e.g. 10 (Calculation: Distance in KM × Rate)"
+                      required
+                    />
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      Calculated automatically using customer's GPS address coordinates relative to Hakimi Supermarket.
+                    </span>
+                  </div>
+                )}
+
+                <button type="submit" className="btn-primary" style={{ padding: '12px', marginTop: '6px' }}>
                   <Save size={16} />
-                  <span>Save Free Delivery Threshold</span>
+                  <span>Save Store Delivery Settings</span>
                 </button>
               </form>
             </div>
