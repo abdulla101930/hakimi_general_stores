@@ -19,7 +19,9 @@ export const OwnerDashboard: React.FC = () => {
     deliveryPricingMode,
     flatDeliveryCharge,
     distanceRateMultiplier,
-    setDeliverySettings
+    setDeliverySettings,
+    isMaintenanceMode,
+    toggleMaintenanceMode
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'settings'>('orders');
@@ -691,9 +693,52 @@ export const OwnerDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* --- TAB 3: DELIVERY SETTINGS (Editable Threshold) --- */}
+        {/* --- TAB 3: DELIVERY & STORE MAINTENANCE SETTINGS --- */}
         {activeTab === 'settings' && (
-          <div style={{ padding: '16px' }}>
+          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Global Store Maintenance Mode Toggle */}
+            <div style={{
+              backgroundColor: isMaintenanceMode ? '#fff1f2' : 'var(--bg-card)',
+              border: isMaintenanceMode ? '2px solid #e11d48' : '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius-md)',
+              padding: '16px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                <div>
+                  <h3 style={{ fontSize: '15px', fontWeight: 800, color: isMaintenanceMode ? '#be123c' : 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>🚨 Global Store Maintenance Mode</span>
+                    {isMaintenanceMode && (
+                      <span style={{ fontSize: '10px', backgroundColor: '#e11d48', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontWeight: 800 }}>
+                        OFFLINE (ACTIVE)
+                      </span>
+                    )}
+                  </h3>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', margin: 0 }}>
+                    When switched ON, the ENTIRE site automatically displays the Under Maintenance screen for all customers in real-time.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => toggleMaintenanceMode(!isMaintenanceMode)}
+                  style={{
+                    backgroundColor: isMaintenanceMode ? '#e11d48' : '#16a34a',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '10px 18px',
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                  }}
+                >
+                  {isMaintenanceMode ? '🔴 Turn Site ONLINE' : '🔒 Turn Site OFFLINE'}
+                </button>
+              </div>
+            </div>
+
             <div style={{
               backgroundColor: 'var(--bg-card)',
               border: '1px solid var(--border-color)',

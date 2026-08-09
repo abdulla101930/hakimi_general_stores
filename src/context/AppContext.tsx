@@ -562,6 +562,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setDistanceRateMultiplier(settings.distanceRateMultiplier);
       localStorage.setItem('hakimi_distance_rate_multiplier', settings.distanceRateMultiplier.toString());
     }
+    if (isConfigured) {
+      setDoc(doc(db, 'settings', 'store_status'), settings, { merge: true }).catch(console.error);
+    }
     logOwnerAction('DELIVERY_SETTINGS_UPDATED', settings);
   };
 
@@ -598,10 +601,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : false;
   });
 
+  // Listen to Firestore real-time updates for store status (maintenance mode & delivery settings) across all devices!
+  useEffect(() => {
+    if (!isConfigured) return;
+
+    const settingsRef = doc(db, 'settings', 'store_status');
+    const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.isMaintenanceMode !== undefined) {
+          setIsMaintenanceMode(data.isMaintenanceMode);
+          localStorage.setItem('hakimi_maintenance_mode', JSON.stringify(data.isMaintenanceMode));
+        }
+        if (data.freeDeliveryThreshold !== undefined) {
+          setFreeDeliveryThresholdState(data.freeDeliveryThreshold);
+          localStorage.setItem('hakimi_free_delivery_threshold', data.freeDeliveryThreshold.toString());
+        }
+        if (data.deliveryPricingMode !== undefined) {
+          setDeliveryPricingMode(data.deliveryPricingMode);
+          localStorage.setItem('hakimi_delivery_mode', data.deliveryPricingMode);
+        }
+        if (data.flatDeliveryCharge !== undefined) {
+          setFlatDeliveryCharge(data.flatDeliveryCharge);
+          localStorage.setItem('hakimi_flat_delivery_charge', data.flatDeliveryCharge.toString());
+        }
+        if (data.distanceRateMultiplier !== undefined) {
+          setDistanceRateMultiplier(data.distanceRateMultiplier);
+          localStorage.setItem('hakimi_distance_rate_multiplier', data.distanceRateMultiplier.toString());
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Listen to local window storage events for multi-tab sync
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'hakimi_maintenance_mode' && e.newValue !== null) {
+        setIsMaintenanceMode(JSON.parse(e.newValue));
+      }
+    };
+    const handleCustomEvent = (e: any) => {
+      if (e.detail?.isMaintenanceMode !== undefined) {
+        setIsMaintenanceMode(e.detail.isMaintenanceMode);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('hakimi_maintenance_event', handleCustomEvent);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('hakimi_maintenance_event', handleCustomEvent);
+    };
+  }, []);
+
   const toggleMaintenanceMode = (enabled?: boolean) => {
     const nextVal = enabled !== undefined ? enabled : !isMaintenanceMode;
     setIsMaintenanceMode(nextVal);
     localStorage.setItem('hakimi_maintenance_mode', JSON.stringify(nextVal));
+
+    // Broadcast locally across browser windows/tabs
+    window.dispatchEvent(new CustomEvent('hakimi_maintenance_event', { detail: { isMaintenanceMode: nextVal } }));
+
+    // Sync to Firestore so ALL customer devices across the internet update in REAL TIME!
+    if (isConfigured) {
+      setDoc(doc(db, 'settings', 'store_status'), { isMaintenanceMode: nextVal }, { merge: true }).catch(console.error);
+    }
+
     logOwnerAction('MAINTENANCE_MODE_TOGGLED' as any, { enabled: nextVal });
   };
 
