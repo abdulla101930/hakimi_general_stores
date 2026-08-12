@@ -152,8 +152,15 @@ const MainLayout: React.FC = () => {
 
   // Request browser Notification permissions on mount
   useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
+    try {
+      if (typeof window !== 'undefined' && 'Notification' in window && typeof Notification.requestPermission === 'function' && Notification.permission === 'default') {
+        const promise = Notification.requestPermission();
+        if (promise && typeof promise.then === 'function') {
+          promise.catch(() => {});
+        }
+      }
+    } catch (e) {
+      console.warn('Notification permission request skipped:', e);
     }
   }, []);
 

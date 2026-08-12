@@ -17,6 +17,14 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      // Emergency Boot Recovery Script
+      window.addEventListener('error', function (e) {
+        var root = document.getElementById('root');
+        if (root && (!root.children || root.children.length === 0)) {
+          console.error('[EmergencyRecovery] Boot error detected:', e.error || e.message);
+        }
+      });
+
       // Global PWA Install Prompt Capture
       window.deferredPwaPrompt = null;
       window.addEventListener('beforeinstallprompt', (e) => {
@@ -26,17 +34,15 @@
 
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          // Static SW registration path with updateViaCache none
-          navigator.serviceWorker.register('./sw.js?v=v6', { updateViaCache: 'none' }).then((registration) => {
+          navigator.serviceWorker.register('./sw.js?v=v7', { updateViaCache: 'none' }).then((registration) => {
             registration.update();
           }).catch(err => {
             console.log('Service Worker Registration Failed:', err);
           });
         });
 
-        // Controllerchange listener with session storage reload guard to prevent loops
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-          const reloadedKey = 'sw_controller_reloaded';
+          const reloadedKey = 'sw_controller_reloaded_v7';
           if (!sessionStorage.getItem(reloadedKey)) {
             sessionStorage.setItem(reloadedKey, 'true');
             window.location.reload();

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db, isConfigured } from '../firebase';
 import { logOwnerAction } from '../utils/auditLogger';
+import { safeJSONParse } from '../utils/safeStorage';
 import { 
   doc, 
   collection, 
@@ -473,65 +474,88 @@ export const isOwnerPhone = (phone: string) => {
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<{ phone: string; name: string; addresses: Address[] } | null>(() => {
-    const saved = localStorage.getItem('hakimi_user');
-    return saved ? JSON.parse(saved) : null;
+    const parsed = safeJSONParse<{ phone: string; name: string; addresses: Address[] } | null>('hakimi_user', null);
+    if (parsed && typeof parsed === 'object' && typeof parsed.phone === 'string') {
+      return parsed;
+    }
+    return null;
   });
 
   const [role, setRole] = useState<'customer' | 'owner'>(() => {
-    const savedUser = localStorage.getItem('hakimi_user');
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      return isOwnerPhone(parsed.phone) ? 'owner' : 'customer';
+    const parsedUser = safeJSONParse<{ phone?: string } | null>('hakimi_user', null);
+    if (parsedUser && parsedUser.phone) {
+      return isOwnerPhone(parsedUser.phone) ? 'owner' : 'customer';
     }
     return 'customer';
   });
 
   const [catalog, setCatalog] = useState<Product[]>([]);
   const [cart, setCart] = useState<Record<string, number>>(() => {
-    const savedUser = localStorage.getItem('hakimi_user');
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      const cartKey = `hakimi_cart_${parsed.phone}`;
-      const savedCart = localStorage.getItem(cartKey);
-      return savedCart ? JSON.parse(savedCart) : {};
+    const parsedUser = safeJSONParse<{ phone?: string } | null>('hakimi_user', null);
+    if (parsedUser && parsedUser.phone) {
+      const cartKey = `hakimi_cart_${parsedUser.phone}`;
+      return safeJSONParse<Record<string, number>>(cartKey, {});
     }
     return {};
   });
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeOrder, setActiveOrder] = useState<Order | null>(() => {
-    const saved = localStorage.getItem('hakimi_active_order');
-    return saved ? JSON.parse(saved) : null;
+    const parsed = safeJSONParse<Order | null>('hakimi_active_order', null);
+    if (parsed && typeof parsed === 'object' && parsed.id) {
+      return parsed;
+    }
+    return null;
   });
 
   const [currentView, setView] = useState<'catalog' | 'cart' | 'tracking' | 'admin'>(() => {
-    const savedUser = localStorage.getItem('hakimi_user');
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      return isOwnerPhone(parsed.phone) ? 'admin' : 'catalog';
+    const parsedUser = safeJSONParse<{ phone?: string } | null>('hakimi_user', null);
+    if (parsedUser && parsedUser.phone) {
+      return isOwnerPhone(parsedUser.phone) ? 'admin' : 'catalog';
     }
     return 'catalog';
   });
 
   // Owner Configurable Free Delivery & Delivery Fee Settings
   const [freeDeliveryThreshold, setFreeDeliveryThresholdState] = useState<number>(() => {
-    const saved = localStorage.getItem('hakimi_free_delivery_threshold');
-    return saved ? parseFloat(saved) : 200;
+    try {
+      const saved = localStorage.getItem('hakimi_free_delivery_threshold');
+      if (saved) {
+        const val = parseFloat(saved);
+        if (!isNaN(val)) return val;
+      }
+    } catch (e) {}
+    return 200;
   });
 
   const [deliveryPricingMode, setDeliveryPricingMode] = useState<'flat' | 'distance'>(() => {
-    const saved = localStorage.getItem('hakimi_delivery_mode');
-    return (saved as 'flat' | 'distance') || 'flat';
+    try {
+      const saved = localStorage.getItem('hakimi_delivery_mode');
+      if (saved === 'flat' || saved === 'distance') return saved;
+    } catch (e) {}
+    return 'flat';
   });
 
   const [flatDeliveryCharge, setFlatDeliveryCharge] = useState<number>(() => {
-    const saved = localStorage.getItem('hakimi_flat_delivery_charge');
-    return saved ? parseFloat(saved) : 30;
+    try {
+      const saved = localStorage.getItem('hakimi_flat_delivery_charge');
+      if (saved) {
+        const val = parseFloat(saved);
+        if (!isNaN(val)) return val;
+      }
+    } catch (e) {}
+    return 30;
   });
 
   const [distanceRateMultiplier, setDistanceRateMultiplier] = useState<number>(() => {
-    const saved = localStorage.getItem('hakimi_distance_rate_multiplier');
-    return saved ? parseFloat(saved) : 10; // Default ₹10 / km
+    try {
+      const saved = localStorage.getItem('hakimi_distance_rate_multiplier');
+      if (saved) {
+        const val = parseFloat(saved);
+        if (!isNaN(val)) return val;
+      }
+    } catch (e) {}
+    return 10;
   });
 
   const setFreeDeliveryThreshold = (val: number) => {
@@ -597,8 +621,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const [isMaintenanceMode, setIsMaintenanceMode] = useState<boolean>(() => {
-    const saved = localStorage.getItem('hakimi_maintenance_mode');
-    return saved ? JSON.parse(saved) : false;
+    return safeJSONParse<boolean>('hakimi_maintenance_mode', false);
   });
 
   // Listen to Firestore real-time updates for store status (maintenance mode & delivery settings) across all devices!
@@ -639,7 +662,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'hakimi_maintenance_mode' && e.newValue !== null) {
-        setIsMaintenanceMode(JSON.parse(e.newValue));
+        try {
+          setIsMaintenanceMode(JSON.parse(e.newValue) === true);
+        } catch (err) {}
       }
     };
     const handleCustomEvent = (e: any) => {
@@ -673,12 +698,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const [selectedAddress, setSelectedAddressState] = useState<Address | null>(() => {
-    const savedUser = localStorage.getItem('hakimi_user');
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      if (parsed.addresses && parsed.addresses.length > 0) {
-        return parsed.addresses[0];
-      }
+    const parsedUser = safeJSONParse<{ addresses?: Address[] } | null>('hakimi_user', null);
+    if (parsedUser && Array.isArray(parsedUser.addresses) && parsedUser.addresses.length > 0) {
+      return parsedUser.addresses[0];
     }
     return null;
   });
@@ -691,8 +713,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // --- FIRESTORE CATALOG SYNC ---
   useEffect(() => {
     if (!isConfigured) {
-      const saved = localStorage.getItem('hakimi_catalog');
-      setCatalog(saved ? JSON.parse(saved) : DEFAULT_PRODUCTS);
+      const saved = safeJSONParse<Product[] | null>('hakimi_catalog', null);
+      setCatalog(Array.isArray(saved) && saved.length > 0 ? saved : DEFAULT_PRODUCTS);
       return;
     }
 
@@ -724,8 +746,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // --- FIRESTORE ORDERS SYNC ---
   useEffect(() => {
     if (!isConfigured) {
-      const saved = localStorage.getItem('hakimi_orders');
-      setOrders(saved ? JSON.parse(saved) : []);
+      const saved = safeJSONParse<Order[] | null>('hakimi_orders', null);
+      setOrders(Array.isArray(saved) ? saved : []);
       return;
     }
 
@@ -787,8 +809,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (user) {
       const cartKey = `hakimi_cart_${user.phone}`;
-      const savedCart = localStorage.getItem(cartKey);
-      const userCart = savedCart ? JSON.parse(savedCart) : {};
+      const userCart = safeJSONParse<Record<string, number>>(cartKey, {});
       
       if (pendingCartAction) {
         userCart[pendingCartAction] = (userCart[pendingCartAction] || 0) + 1;
