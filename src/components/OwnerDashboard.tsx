@@ -26,6 +26,7 @@ export function OwnerDashboard() {
 
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'settings'>('orders');
   const [selectedCustomerPhone, setSelectedCustomerPhone] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<'all' | OrderStatus>('all');
   const [thresholdInput, setThresholdInput] = useState<string>(freeDeliveryThreshold.toString());
   const [pricingModeInput, setPricingModeInput] = useState<'flat' | 'distance'>(deliveryPricingMode || 'flat');
   const [flatChargeInput, setFlatChargeInput] = useState<string>((flatDeliveryCharge ?? 30).toString());
@@ -183,8 +184,17 @@ export function OwnerDashboard() {
 
   const uniqueCustomers = Array.from(new Set(orders.map((o) => o.customerPhone)));
 
-  const filteredOrders =
-    selectedCustomerPhone === 'all' ? orders : orders.filter((o) => o.customerPhone === selectedCustomerPhone);
+  const sortedOrders = [...orders].sort((a, b) => {
+    const ta = new Date(a.date).getTime();
+    const tb = new Date(b.date).getTime();
+    return (Number.isNaN(tb) ? 0 : tb) - (Number.isNaN(ta) ? 0 : ta);
+  });
+
+  const filteredOrders = sortedOrders
+    .filter((o) => selectedCustomerPhone === 'all' || o.customerPhone === selectedCustomerPhone)
+    .filter((o) => selectedStatus === 'all' || o.status === selectedStatus);
+
+  const statusCount = (s: OrderStatus) => orders.filter((o) => o.status === s).length;
 
   const availableSubdivisions =
     mainCategory === 'Food' ? FOOD_SUBS.filter((s) => s !== 'All') : HYG_SUBS.filter((s) => s !== 'All');
@@ -293,6 +303,25 @@ export function OwnerDashboard() {
                     </option>
                   );
                 })}
+              </select>
+            </div>
+
+            <div className="admin-filter-row" style={{ marginTop: '10px' }}>
+              <div className="admin-filter-label">
+                <Truck size={14} color="var(--primary)" />
+                <span>Filter by Status:</span>
+              </div>
+              <select
+                className="status-dropdown"
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value as 'all' | OrderStatus)}
+                style={{ fontSize: '11px', padding: '4px 8px' }}
+              >
+                <option value="all">All Statuses ({orders.length})</option>
+                <option value="placed">🔔 Placed ({statusCount('placed')})</option>
+                <option value="packing">📦 Packing ({statusCount('packing')})</option>
+                <option value="out_for_delivery">🛵 Out for Delivery ({statusCount('out_for_delivery')})</option>
+                <option value="delivered">🎁 Delivered ({statusCount('delivered')})</option>
               </select>
             </div>
 
