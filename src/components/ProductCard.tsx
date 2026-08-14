@@ -25,9 +25,10 @@ export function ProductCard({ product }: ProductCardProps) {
   const quantity = cart[cartKeyOf(product.id, selectedWeight)] || 0;
 
   const isEmoji = !product.image.startsWith('http') && !product.image.startsWith('/');
+  const isHygiene = product.mainCategory === 'Hygiene';
 
   return (
-    <div className="product-card">
+    <div className={`product-card ${isHygiene ? 'card-hygiene' : 'card-food'}`}>
       <div className="product-img-container">
         <button
           type="button"

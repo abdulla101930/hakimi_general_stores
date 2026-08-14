@@ -80,7 +80,7 @@ body {
     'Helvetica Neue',
     Arial,
     sans-serif;
-  background: var(--bg-main);
+  background: linear-gradient(180deg, #e0f2fe 0%, var(--bg-main) 42%, #fef3c7 130%);
   color: var(--text-main);
   line-height: 1.45;
   overscroll-behavior-y: contain;
@@ -316,7 +316,7 @@ a {
 .blinkit-top-header-banner {
   padding: 10px 16px 12px;
   border-top: 3px solid var(--primary);
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(236, 72, 153, 0.05) 50%, rgba(249, 115, 22, 0.08));
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(6, 182, 212, 0.1) 50%, rgba(249, 115, 22, 0.12));
 }
 
 .blinkit-header-row {
@@ -681,8 +681,12 @@ a {
 
 .catalog-count {
   font-size: 12px;
-  font-weight: 800;
-  color: var(--text-main);
+  font-weight: 900;
+  color: var(--primary-dark);
+  background: linear-gradient(90deg, #eff6ff, #e0f2fe);
+  border: 1px solid #bfdbfe;
+  padding: 4px 10px;
+  border-radius: 999px;
 }
 
 .dietary-filter-group {
@@ -782,6 +786,7 @@ a {
 /* ---------- ProductCard ---------- */
 
 .product-card {
+  min-width: 0;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
@@ -799,13 +804,21 @@ a {
 
 .product-img-container {
   position: relative;
-  height: 96px;
+  height: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #f8fafc;
   border-radius: var(--radius-md);
   overflow: hidden;
+}
+
+.card-food .product-img-container {
+  background: linear-gradient(150deg, #fef3c7 0%, #fed7aa 55%, #fdba74 130%);
+}
+
+.card-hygiene .product-img-container {
+  background: linear-gradient(150deg, #ede9fe 0%, #fbcfe8 55%, #c4b5fd 130%);
 }
 
 .product-like-btn {
@@ -859,14 +872,19 @@ a {
 }
 
 .product-emoji-render {
-  font-size: 46px;
+  font-size: 44px;
   line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
 }
 
 .product-img-render {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  min-width: 0;
+  min-height: 0;
+  object-fit: contain;
+  padding: 8px;
+  background: transparent;
 }
 
 .product-out-of-stock {
@@ -890,12 +908,17 @@ a {
 .product-weight-tag {
   display: inline-block;
   font-size: 9.5px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--accent-purple-dark);
   background: var(--accent-purple-bg);
   border-radius: 6px;
   padding: 2px 7px;
   margin-bottom: 4px;
+}
+
+.card-food .product-weight-tag {
+  color: var(--accent-orange-dark);
+  background: var(--accent-orange-bg);
 }
 
 .product-variant-select-wrap {
@@ -942,18 +965,21 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .product-price-column {
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }
 
 .current-price-val {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 900;
   color: var(--text-main);
+  white-space: nowrap;
 }
 
 .original-price-val {
@@ -966,10 +992,10 @@ a {
   border: 1px solid var(--primary);
   color: var(--primary);
   background: #fff;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 900;
-  letter-spacing: 0.5px;
-  padding: 6px 18px;
+  letter-spacing: 0.3px;
+  padding: 6px 12px;
   border-radius: 10px;
   cursor: pointer;
   transition: transform 0.15s var(--ease-out), background 0.2s var(--ease-out), color 0.2s var(--ease-out);
@@ -984,10 +1010,10 @@ a {
 .qty-stepper-box {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
   border: 1px solid var(--primary);
   border-radius: 10px;
-  padding: 5px 8px;
+  padding: 4px 7px;
   background: #fff;
 }
 
@@ -995,8 +1021,8 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border: none;
   border-radius: 6px;
   background: var(--primary-light);
