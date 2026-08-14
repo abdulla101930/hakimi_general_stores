@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { Catalog } from './components/Catalog';
-import { Cart } from './components/Cart';
 import { Toasts } from './components/Toasts';
 import { LoginModal } from './components/LoginModal';
 import { DeliveryTracking } from './components/DeliveryTracking';
@@ -200,7 +199,6 @@ function MainLayout() {
 
       {currentView !== 'admin' && <MagicBottomNav isModalOpen={isMapOpen || isPWAOpen || isDevLogsOpen} />}
 
-      <Cart onOpenMap={() => setMapOpen(true)} />
       <LoginModal />
       <MapPickerModal isOpen={isMapOpen} onClose={() => setMapOpen(false)} onSelectAddress={handleSelectMapAddress} />
       <PWAInstallModal isOpen={isPWAOpen} onClose={() => setPWAOpen(false)} />

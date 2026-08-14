@@ -43,6 +43,7 @@ export function OwnerDashboard() {
   const [inStock, setInStock] = useState(true);
   const [image, setImage] = useState('🍎');
   const [handlingFee, setHandlingFee] = useState('');
+  const [variantsText, setVariantsText] = useState('');
 
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
@@ -93,6 +94,18 @@ export function OwnerDashboard() {
       return;
     }
 
+    const availableVariants = variantsText
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => {
+        const [vWeight, vPriceStr] = part.split('@');
+        const vPrice = parseFloat(vPriceStr);
+        if (!vWeight || isNaN(vPrice) || vPrice <= 0) return null;
+        return { weight: vWeight.trim(), price: vPrice };
+      })
+      .filter((v): v is { weight: string; price: number } => v !== null);
+
     setFormError('');
 
     if (editingId) {
@@ -106,7 +119,8 @@ export function OwnerDashboard() {
         dietaryType,
         inStock,
         image,
-        handlingFee: handlingFeeNum
+        handlingFee: handlingFeeNum,
+        availableVariants: availableVariants.length > 0 ? availableVariants : undefined
       });
       setFormSuccess('Product details updated!');
       setEditingId(null);
@@ -121,7 +135,8 @@ export function OwnerDashboard() {
         dietaryType,
         inStock,
         image,
-        handlingFee: handlingFeeNum
+        handlingFee: handlingFeeNum,
+        availableVariants: availableVariants.length > 0 ? availableVariants : undefined
       });
       setFormSuccess('Product added to catalog!');
     }
@@ -142,6 +157,11 @@ export function OwnerDashboard() {
     setInStock(p.inStock);
     setImage(p.image);
     setHandlingFee(p.handlingFee?.toString() || '');
+    setVariantsText(
+      (p.availableVariants || [])
+        .map((v) => `${v.weight}@${v.price}`)
+        .join(', ')
+    );
     setFormError('');
   };
 
@@ -157,6 +177,7 @@ export function OwnerDashboard() {
     setInStock(true);
     setImage('🍎');
     setHandlingFee('');
+    setVariantsText('');
     setFormError('');
   };
 
@@ -435,6 +456,17 @@ export function OwnerDashboard() {
                 </div>
               </div>
 
+              <div className="input-group">
+                <label className="input-label">Available Sizes / Quantities (optional)</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. 1 kg@120, 500 g@65  (size@price, comma separated)"
+                  value={variantsText}
+                  onChange={(e) => setVariantsText(e.target.value)}
+                />
+              </div>
+
               <div className="form-row-2">
                 <div className="input-group">
                   <label className="input-label">Selling Price (₹) *</label>
@@ -537,7 +569,9 @@ export function OwnerDashboard() {
                         <div className="admin-product-name">{product.name}</div>
                         <div className="admin-product-meta">
                           {product.mainCategory || 'Food'} ➔ {product.subCategory} | ₹{product.price}{' '}
-                          {product.originalPrice && <s style={{ fontSize: '9px' }}>₹{product.originalPrice}</s>} |{' '}
+                          {product.originalPrice && product.originalPrice > product.price && (
+                            <s style={{ fontSize: '9px' }}>₹{product.originalPrice}</s>
+                          )} |{' '}
                           {product.inStock ? (
                             <span style={{ color: 'var(--success)' }}>In Stock</span>
                           ) : (

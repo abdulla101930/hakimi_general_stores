@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useApp } from '../context/AppContext';
 import { computeBill, computeCouponSavings } from '../lib/billing';
 import { sendCheckoutOrderToWhatsApp } from '../lib/whatsapp';
+import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import {
   ArrowLeft,
   Trash2,
@@ -14,7 +15,8 @@ import {
   PhoneOff,
   Shield,
   Mic,
-  ChevronRight
+  ChevronRight,
+  HandHelping
 } from 'lucide-react';
 import { PaymentModal } from './PaymentModal';
 
@@ -22,7 +24,10 @@ interface CartPageProps {
   onOpenMap: () => void;
 }
 
+const NO_INSTRUCTION = 'No delivery instructions';
+
 const INSTRUCTION_OPTIONS = [
+  { id: 'none', label: NO_INSTRUCTION, sub: 'Deliver normally', icon: HandHelping },
   { id: 'record', label: 'Record voice', sub: 'Press here and hold', icon: Mic },
   { id: 'door', label: 'Leave at door', sub: 'Ring bell & drop', icon: BellOff },
   { id: 'guard', label: 'Leave with guard', sub: 'Security gate', icon: Shield },
@@ -31,11 +36,10 @@ const INSTRUCTION_OPTIONS = [
 
 export function CartPage({ onOpenMap }: CartPageProps) {
   const {
-    cart,
-    catalog,
     removeFromCart,
     addToCart,
     clearCart,
+    resolveCartLines,
     selectedAddress,
     setLoginOpen,
     user,
@@ -49,35 +53,38 @@ export function CartPage({ onOpenMap }: CartPageProps) {
   } = useApp();
 
   const [couponCode, setCouponCode] = useState('');
-  const [selectedInstruction, setSelectedInstruction] = useState<string>('Avoid calling');
+  const [selectedInstruction, setSelectedInstruction] = useState<string>(NO_INSTRUCTION);
+  const [voiceNoteUrl, setVoiceNoteUrl] = useState<string | null>(null);
   const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
 
-  const cartItems = Object.entries(cart)
-    .map(([id, qty]) => {
-      const product = catalog.find((p) => p.id === id);
-      return { product, qty };
-    })
-    .filter((item) => item.product !== undefined && item.qty > 0) as {
-    product: NonNullable<typeof catalog[number]>;
-    qty: number;
-  }[];
+  const { isRecording, startRecording, stopRecording } = useVoiceRecorder();
+
+  const cartItems = resolveCartLines();
 
   const bill = computeBill({
-    items: cartItems.map(({ product, qty }) => ({ price: product.price, quantity: qty, handlingFee: product.handlingFee })),
+    items: cartItems.map(({ product, quantity, price }) => ({
+      price,
+      quantity,
+      handlingFee: product.handlingFee
+    })),
     settings: deliverySettings,
     address: selectedAddress,
     coupon: appliedCoupon
   });
 
   const couponSavings = computeCouponSavings({
-    items: cartItems.map(({ product, qty }) => ({ price: product.price, quantity: qty, handlingFee: product.handlingFee })),
+    items: cartItems.map(({ product, quantity, price }) => ({
+      price,
+      quantity,
+      handlingFee: product.handlingFee
+    })),
     settings: deliverySettings,
     address: selectedAddress,
     coupon: appliedCoupon
   });
 
   const isFreeDelivery = bill.itemsTotal >= freeDeliveryThreshold;
-  const totalItems = cartItems.reduce((sum, item) => sum + item.qty, 0);
+  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleApplyCoupon = (e: FormEvent) => {
     e.preventDefault();
@@ -87,6 +94,23 @@ export function CartPage({ onOpenMap }: CartPageProps) {
       setCouponCode('');
     } else {
       alert(result.message);
+    }
+  };
+
+  const handleVoiceHold = async () => {
+    await startRecording();
+  };
+
+  const handleVoiceRelease = () => {
+    const result = stopRecording();
+    if (!result) return;
+    if (result.transcript) {
+      setSelectedInstruction(`🎙️ ${result.transcript}`);
+    } else if (result.audioUrl) {
+      setSelectedInstruction(`🎙️ Voice note recorded (${Math.max(1, Math.round(result.durationMs / 1000))}s)`);
+      setVoiceNoteUrl(result.audioUrl);
+    } else {
+      setSelectedInstruction(NO_INSTRUCTION);
     }
   };
 
@@ -101,9 +125,10 @@ export function CartPage({ onOpenMap }: CartPageProps) {
   const handleProcessOrderPayment = (paymentMethod: 'COD' | 'ONLINE', paymentDetails?: string) => {
     setPaymentModalOpen(false);
     const paymentStatus = paymentMethod === 'ONLINE' ? 'Paid (Online)' : 'Pending';
-    const newOrder = createOrder(selectedInstruction, paymentMethod, paymentStatus);
+    const instruction = selectedInstruction === NO_INSTRUCTION ? '' : selectedInstruction;
+    const newOrder = createOrder(instruction, paymentMethod, paymentStatus);
     const waUrl = sendCheckoutOrderToWhatsApp(newOrder, {
-      instruction: selectedInstruction,
+      instruction: instruction || NO_INSTRUCTION,
       paymentDetails
     });
     window.open(waUrl, '_blank');
@@ -179,8 +204,8 @@ export function CartPage({ onOpenMap }: CartPageProps) {
           <div className="cart-section-box">
             <h2 className="cart-section-title">Items in Cart ({totalItems})</h2>
             <div className="cart-items-list">
-              {cartItems.map(({ product, qty }) => (
-                <div key={product.id} className="cart-item-row-ss5">
+              {cartItems.map(({ product, weight, quantity, price }) => (
+                <div key={`${product.id}::${weight}`} className="cart-item-row-ss5">
                   <div className="cart-item-thumb">
                     {product.image.startsWith('http') || product.image.startsWith('/') ? (
                       <img src={product.image} alt={product.name} />
@@ -190,25 +215,25 @@ export function CartPage({ onOpenMap }: CartPageProps) {
                   </div>
                   <div className="cart-item-details-col">
                     <h3 className="cart-item-title">{product.name}</h3>
-                    <span className="cart-item-unit">{product.weight}</span>
+                    <span className="cart-item-unit">{weight}</span>
                     <div className="cart-item-prices">
-                      <span className="current-price">₹{product.price}</span>
-                      {product.originalPrice && product.originalPrice > product.price && (
+                      <span className="current-price">₹{price}</span>
+                      {product.originalPrice && product.originalPrice > price && (
                         <span className="strike-price">₹{product.originalPrice}</span>
                       )}
                     </div>
                   </div>
                   <div className="cart-item-stepper-wrapper">
                     <div className="ss5-qty-stepper">
-                      <button type="button" onClick={() => removeFromCart(product.id)} aria-label="Decrease quantity">
+                      <button type="button" onClick={() => removeFromCart(product.id, weight)} aria-label="Decrease quantity">
                         <Minus size={13} strokeWidth={3} />
                       </button>
-                      <span className="stepper-val">{qty}</span>
-                      <button type="button" onClick={() => addToCart(product.id)} aria-label="Increase quantity">
+                      <span className="stepper-val">{quantity}</span>
+                      <button type="button" onClick={() => addToCart(product.id, weight)} aria-label="Increase quantity">
                         <Plus size={13} strokeWidth={3} />
                       </button>
                     </div>
-                    <span className="cart-item-total-price">₹{product.price * qty}</span>
+                    <span className="cart-item-total-price">₹{price * quantity}</span>
                   </div>
                 </div>
               ))}
@@ -328,6 +353,28 @@ export function CartPage({ onOpenMap }: CartPageProps) {
               {INSTRUCTION_OPTIONS.map((inst) => {
                 const Icon = inst.icon;
                 const isSelected = selectedInstruction === inst.label;
+                if (inst.id === 'record') {
+                  return (
+                    <div
+                      key={inst.id}
+                      className={`inst-card-box inst-card-record ${isRecording ? 'recording' : ''} ${selectedInstruction.startsWith('🎙️') ? 'active' : ''}`}
+                      role="button"
+                      onPointerDown={handleVoiceHold}
+                      onPointerUp={handleVoiceRelease}
+                      onPointerLeave={() => {
+                        if (isRecording) handleVoiceRelease();
+                      }}
+                      onContextMenu={(e) => e.preventDefault()}
+                    >
+                      <div className="inst-top-row">
+                        <Icon size={18} color={isRecording ? '#dc2626' : isSelected ? '#2563eb' : '#64748b'} />
+                        {isSelected && <Check size={14} className="inst-check" />}
+                      </div>
+                      <span className="inst-label-title">{isRecording ? 'Recording...' : inst.label}</span>
+                      <span className="inst-subtext">{isRecording ? 'Release to finish' : inst.sub}</span>
+                    </div>
+                  );
+                }
                 return (
                   <button
                     key={inst.id}
@@ -345,6 +392,7 @@ export function CartPage({ onOpenMap }: CartPageProps) {
                 );
               })}
             </div>
+            {voiceNoteUrl && <audio controls src={voiceNoteUrl} className="voice-note-player" />}
           </div>
 
           <div className="delivering-to-bar">

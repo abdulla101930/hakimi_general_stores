@@ -1,3 +1,10 @@
+export interface ProductVariant {
+  weight: string;
+  price: number;
+  originalPrice?: number;
+  handlingFee?: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -11,6 +18,7 @@ export interface Product {
   inStock: boolean;
   image: string;
   handlingFee?: number;
+  availableVariants?: ProductVariant[];
 }
 
 export interface OrderItem {

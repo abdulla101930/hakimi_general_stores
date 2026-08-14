@@ -5,6 +5,12 @@ import { logOwnerAction } from '../lib/audit';
 import { safeJSONParse, safeJSONStringify } from '../lib/storage';
 import { DEFAULT_PRODUCTS, isOwnerPhone } from '../lib/constants';
 import { computeBill, computeDeliveryCharge, type BillResult } from '../lib/billing';
+import {
+  cartKeyOf,
+  getProductHandlingFee,
+  resolveCartLines as buildCartLines,
+  type CartLine
+} from '../lib/cart';
 import type {
   Address,
   Coupon,
@@ -31,7 +37,6 @@ interface AppContextType {
   selectedAddress: Address | null;
   appliedCoupon: Coupon | null;
   isLoginOpen: boolean;
-  isCartOpen: boolean;
   freeDeliveryThreshold: number;
   setFreeDeliveryThreshold: (threshold: number) => void;
   deliveryPricingMode: DeliveryPricingMode;
@@ -44,13 +49,13 @@ interface AppContextType {
   toggleMaintenanceMode: (enabled?: boolean) => void;
   login: (phone: string, name: string, addresses: Address[]) => void;
   logout: () => void;
-  setCartOpen: (open: boolean) => void;
   setLoginOpen: (open: boolean) => void;
   setView: (view: View) => void;
-  addToCart: (productId: string) => void;
-  removeFromCart: (productId: string) => void;
-  updateCartQty: (productId: string, qty: number) => void;
+  addToCart: (productId: string, weight?: string) => void;
+  removeFromCart: (productId: string, weight?: string) => void;
+  updateCartQty: (productId: string, weight: string, qty: number) => void;
   clearCart: () => void;
+  resolveCartLines: () => CartLine[];
   setSelectedAddress: (addr: Address) => void;
   applyCoupon: (code: string) => { success: boolean; message: string };
   removeCoupon: () => void;
@@ -91,7 +96,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return u ? (isOwnerPhone(u.phone) ? 'owner' : 'customer') : 'customer';
   });
 
-  const [catalog, setCatalog] = useState<Product[]>([]);
+  const [catalog, setCatalog] = useState<Product[]>(() => {
+    if (!isConfigured) {
+      const saved = safeJSONParse<Product[] | null>('hakimi_catalog', null);
+      return Array.isArray(saved) && saved.length > 0 ? saved : DEFAULT_PRODUCTS;
+    }
+    return [];
+  });
   const [cart, setCart] = useState<Record<string, number>>(() => {
     const u = readUser();
     return u ? safeJSONParse<Record<string, number>>(`hakimi_cart_${u.phone}`, {}) : {};
@@ -140,8 +151,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [isLoginOpen, setLoginOpen] = useState(false);
-  const [isCartOpen, setCartOpen] = useState(false);
-  const [pendingCartAction, setPendingCartAction] = useState<string | null>(null);
 
   const persistSettings = (partial: Partial<DeliverySettings>) => {
     if (partial.freeDeliveryThreshold !== undefined)
@@ -237,8 +246,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // --- Catalog sync ---
   useEffect(() => {
     if (!isConfigured) {
-      const saved = safeJSONParse<Product[] | null>('hakimi_catalog', null);
-      setCatalog(Array.isArray(saved) && saved.length > 0 ? saved : DEFAULT_PRODUCTS);
       return;
     }
     const unsubscribe = onSnapshot(collection(db, 'products'), (snapshot) => {
@@ -252,7 +259,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           await setDoc(doc(db, 'products', id), data).catch(() => {});
         });
       } else {
-        setCatalog(productsList);
+        setCatalog((prev) => {
+          const prevJson = JSON.stringify(prev);
+          const nextJson = JSON.stringify(productsList);
+          return prevJson === nextJson ? prev : productsList;
+        });
       }
     });
     return () => unsubscribe();
@@ -275,7 +286,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ordersList.push(doc.data() as Order);
       });
       ordersList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setOrders(ordersList);
+      setOrders((prev) => {
+        const prevJson = JSON.stringify(prev);
+        const nextJson = JSON.stringify(ordersList);
+        return prevJson === nextJson ? prev : ordersList;
+      });
     });
     return () => unsubscribe();
   }, []);
@@ -318,21 +333,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (user) safeJSONStringify(`hakimi_cart_${user.phone}`, cart);
   }, [cart, user]);
 
-  useEffect(() => {
-    if (!user) return;
-    const cartKey = `hakimi_cart_${user.phone}`;
-    const userCart = safeJSONParse<Record<string, number>>(cartKey, {});
-    if (pendingCartAction) {
-      userCart[pendingCartAction] = (userCart[pendingCartAction] || 0) + 1;
-      setPendingCartAction(null);
-    }
-    setCart(userCart);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
   const login = (phone: string, name: string, addresses: Address[]) => {
     const newUser: User = { phone: phone.trim(), name: name.trim(), addresses };
     safeJSONStringify('hakimi_user', newUser);
+    const persistedCart = safeJSONParse<Record<string, number>>(`hakimi_cart_${newUser.phone}`, {});
+    setCart((prev) => {
+      const merged: Record<string, number> = { ...persistedCart };
+      Object.entries(prev).forEach(([key, count]) => {
+        merged[key] = (merged[key] || 0) + count;
+      });
+      return merged;
+    });
     setUser(newUser);
     if (isOwnerPhone(newUser.phone)) {
       setRole('owner');
@@ -367,35 +378,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSelectedAddressState(null);
   };
 
-  const addToCart = (productId: string) => {
-    if (!user) {
-      setPendingCartAction(productId);
-      setLoginOpen(true);
-      return;
-    }
-    setCart((prev) => ({ ...prev, [productId]: (prev[productId] || 0) + 1 }));
+  const addToCart = (productId: string, weight?: string) => {
+    const product = catalog.find((p) => p.id === productId);
+    const w = weight ?? product?.weight;
+    const key = w ? cartKeyOf(productId, w) : productId;
+    setCart((prev) => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
   };
 
-  const removeFromCart = (productId: string) => {
+  const removeFromCart = (productId: string, weight?: string) => {
+    const product = catalog.find((p) => p.id === productId);
+    const w = weight ?? product?.weight;
+    const key = w ? cartKeyOf(productId, w) : productId;
     setCart((prev) => {
-      if (!prev[productId]) return prev;
+      if (!prev[key]) return prev;
       const copy = { ...prev };
-      copy[productId] -= 1;
-      if (copy[productId] <= 0) delete copy[productId];
+      copy[key] -= 1;
+      if (copy[key] <= 0) delete copy[key];
       return copy;
     });
   };
 
-  const updateCartQty = (productId: string, qty: number) => {
+  const updateCartQty = (productId: string, weight: string, qty: number) => {
+    const key = cartKeyOf(productId, weight);
     setCart((prev) => {
       const copy = { ...prev };
-      if (qty <= 0) delete copy[productId];
-      else copy[productId] = qty;
+      if (qty <= 0) delete copy[key];
+      else copy[key] = qty;
       return copy;
     });
   };
 
   const clearCart = () => setCart({});
+
+  const resolveCartLines = () => buildCartLines(cart, catalog);
 
   const applyCoupon = (code: string) => {
     const uppercaseCode = code.trim().toUpperCase();
@@ -420,19 +435,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user) throw new Error('Must be logged in to place an order.');
     if (!selectedAddress) throw new Error('Please select or add a delivery address.');
 
-    const orderItems: Order['items'] = [];
-    Object.entries(cart).forEach(([id, qty]) => {
-      const prod = catalog.find((p) => p.id === id);
-      if (prod) {
-        orderItems.push({ id: prod.id, name: prod.name, quantity: qty, price: prod.price, weight: prod.weight });
-      }
-    });
+    const cartLines = buildCartLines(cart, catalog);
+    const orderItems: Order['items'] = cartLines.map((line) => ({
+      id: line.product.id,
+      name: line.product.name,
+      quantity: line.quantity,
+      price: line.price,
+      weight: line.weight
+    }));
 
     const bill: BillResult = computeBill({
-      items: orderItems.map((item) => ({
-        price: item.price,
-        quantity: item.quantity,
-        handlingFee: catalog.find((p) => p.id === item.id)?.handlingFee
+      items: cartLines.map((line) => ({
+        price: line.price,
+        quantity: line.quantity,
+        handlingFee: getProductHandlingFee(line.product, line.weight)
       })),
       settings: deliverySettings,
       address: selectedAddress,
@@ -567,7 +583,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         selectedAddress,
         appliedCoupon,
         isLoginOpen,
-        isCartOpen,
         freeDeliveryThreshold,
         setFreeDeliveryThreshold,
         deliveryPricingMode,
@@ -580,13 +595,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         toggleMaintenanceMode,
         login,
         logout,
-        setCartOpen,
         setLoginOpen,
         setView,
         addToCart,
         removeFromCart,
         updateCartQty,
         clearCart,
+        resolveCartLines,
         setSelectedAddress: setSelectedAddressState,
         applyCoupon,
         removeCoupon,

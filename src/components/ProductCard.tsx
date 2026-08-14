@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { cartKeyOf, getProductOriginalPrice, getProductPrice } from '../lib/cart';
 import type { Product } from '../types';
-import { Plus, Minus, Heart } from 'lucide-react';
+import { Plus, Minus, Heart, ChevronDown } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
@@ -9,12 +10,19 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { cart, addToCart, removeFromCart } = useApp();
-  const quantity = cart[product.id] || 0;
+  const [selectedWeight, setSelectedWeight] = useState(product.weight);
   const [isLiked, setIsLiked] = useState(false);
 
-  const discountPercent = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const price = getProductPrice(product, selectedWeight);
+  const originalPrice = getProductOriginalPrice(product, selectedWeight);
+  const hasVariants = Array.isArray(product.availableVariants) && product.availableVariants.length > 0;
+
+  const effectiveOriginal = originalPrice && originalPrice > price ? originalPrice : undefined;
+  const discountPercent = effectiveOriginal
+    ? Math.round(((effectiveOriginal - price) / effectiveOriginal) * 100)
     : 0;
+
+  const quantity = cart[cartKeyOf(product.id, selectedWeight)] || 0;
 
   const isEmoji = !product.image.startsWith('http') && !product.image.startsWith('/');
 
@@ -70,7 +78,25 @@ export function ProductCard({ product }: ProductCardProps) {
       </div>
 
       <div className="product-info-box">
-        <span className="product-weight-tag">{product.weight}</span>
+        {hasVariants ? (
+          <div className="product-variant-select-wrap">
+            <select
+              className="product-variant-select"
+              value={selectedWeight}
+              onChange={(e) => setSelectedWeight(e.target.value)}
+              aria-label={`Select pack size for ${product.name}`}
+            >
+              {product.availableVariants!.map((v) => (
+                <option key={v.weight} value={v.weight}>
+                  {v.weight}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={12} className="product-variant-chevron" />
+          </div>
+        ) : (
+          <span className="product-weight-tag">{product.weight}</span>
+        )}
         <h3 className="product-title-text" title={product.name}>
           {product.name}
         </h3>
@@ -78,23 +104,35 @@ export function ProductCard({ product }: ProductCardProps) {
 
       <div className="product-bottom-row">
         <div className="product-price-column">
-          <span className="current-price-val">₹{product.price}</span>
-          {product.originalPrice && <span className="original-price-val">₹{product.originalPrice}</span>}
+          <span className="current-price-val">₹{price}</span>
+          {effectiveOriginal && <span className="original-price-val">₹{effectiveOriginal}</span>}
         </div>
 
         {product.inStock && (
           <div>
             {quantity === 0 ? (
-              <button type="button" className="btn-add-action" onClick={() => addToCart(product.id)}>
+              <button
+                type="button"
+                className="btn-add-action"
+                onClick={() => addToCart(product.id, selectedWeight)}
+              >
                 ADD
               </button>
             ) : (
               <div className="qty-stepper-box">
-                <button type="button" className="btn-stepper-sub" onClick={() => removeFromCart(product.id)}>
+                <button
+                  type="button"
+                  className="btn-stepper-sub"
+                  onClick={() => removeFromCart(product.id, selectedWeight)}
+                >
                   <Minus size={13} strokeWidth={3} />
                 </button>
                 <span className="stepper-qty-val">{quantity}</span>
-                <button type="button" className="btn-stepper-sub" onClick={() => addToCart(product.id)}>
+                <button
+                  type="button"
+                  className="btn-stepper-sub"
+                  onClick={() => addToCart(product.id, selectedWeight)}
+                >
                   <Plus size={13} strokeWidth={3} />
                 </button>
               </div>

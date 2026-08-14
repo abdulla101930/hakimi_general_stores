@@ -8,11 +8,11 @@ interface MagicBottomNavProps {
 const TAB_COUNT = 3;
 
 export function MagicBottomNav({ isModalOpen }: MagicBottomNavProps) {
-  const { currentView, setView, isLoginOpen, isCartOpen, cart } = useApp();
+  const { currentView, setView, isLoginOpen, cart } = useApp();
 
   const totalItems = Object.values(cart).reduce((sum, count) => sum + count, 0);
 
-  if (isLoginOpen || isCartOpen || isModalOpen) return null;
+  if (isLoginOpen || isModalOpen) return null;
 
   const tabs = [
     { id: 'catalog' as const, label: 'Home', icon: Home },

@@ -17,27 +17,30 @@ export function Navbar({ onOpenPWA, onOpenMap }: NavbarProps) {
       <div className="blinkit-top-header-banner">
         <div className="blinkit-header-row">
           <div className="blinkit-brand-title-group">
-            <span className="blinkit-brand-sub">Hakimi General Store in</span>
-            <h1 className="blinkit-header-main-title">
-              {timeText}
-              <span className="blinkit-distance-badge">
-                <MapPin size={10} color="#1d4ed8" fill="#1d4ed8" />
-                {distanceText}
-              </span>
-            </h1>
-            <div
-              className="blinkit-location-subtitle"
-              onClick={onOpenMap}
-              title="Click to select delivery location"
-              role="button"
-            >
-              <span className="blinkit-location-type">
-                {selectedAddress ? `${selectedAddress.type} - ` : 'HOME - '}
-              </span>
-              <span className="blinkit-location-text">
-                {selectedAddress ? selectedAddress.details : '93 Shirien Manzil near HDFC Bank, Ratlam'}
-              </span>
-              <ChevronDown size={14} color="#64748b" className="blinkit-location-chevron" />
+            <img src="./logo.png" alt="Hakimi General Store" className="blinkit-brand-logo" />
+            <div className="blinkit-brand-texts">
+              <span className="blinkit-brand-sub">Hakimi General Store in</span>
+              <h1 className="blinkit-header-main-title">
+                {timeText}
+                <span className="blinkit-distance-badge">
+                  <MapPin size={10} color="#1d4ed8" fill="#1d4ed8" />
+                  {distanceText}
+                </span>
+              </h1>
+              <div
+                className="blinkit-location-subtitle"
+                onClick={onOpenMap}
+                title="Click to select delivery location"
+                role="button"
+              >
+                <span className="blinkit-location-type">
+                  {selectedAddress ? `${selectedAddress.type} - ` : 'HOME - '}
+                </span>
+                <span className="blinkit-location-text">
+                  {selectedAddress ? selectedAddress.details : '93 Shirien Manzil near HDFC Bank, Ratlam'}
+                </span>
+                <ChevronDown size={14} color="#64748b" className="blinkit-location-chevron" />
+              </div>
             </div>
           </div>
 
