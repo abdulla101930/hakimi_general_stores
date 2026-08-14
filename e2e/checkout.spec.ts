@@ -17,7 +17,7 @@ test('guest cart survives login and a full checkout flow', async ({ page }) => {
 
   const selectedInstruction = page.locator('.inst-card-box.active');
   await expect(selectedInstruction).toContainText('No delivery instructions');
-  await expect(page.locator('.inst-card-record')).toBeVisible();
+  await expect(page.locator('.inst-card-record')).toHaveCount(0);
 
   await page.locator('.cart-back-btn').click();
 

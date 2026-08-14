@@ -79,25 +79,25 @@ export function ProductCard({ product }: ProductCardProps) {
       </div>
 
       <div className="product-info-box">
-        {hasVariants ? (
-          <div className="product-variant-select-wrap">
-            <select
-              className="product-variant-select"
-              value={selectedWeight}
-              onChange={(e) => setSelectedWeight(e.target.value)}
-              aria-label={`Select pack size for ${product.name}`}
-            >
-              {product.availableVariants!.map((v) => (
-                <option key={v.weight} value={v.weight}>
-                  {v.weight}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={12} className="product-variant-chevron" />
-          </div>
-        ) : (
-          <span className="product-weight-tag">{product.weight}</span>
-        )}
+        <div className="product-variant-select-wrap">
+          <select
+            className="product-variant-select"
+            value={selectedWeight}
+            onChange={(e) => setSelectedWeight(e.target.value)}
+            aria-label={`Select pack size for ${product.name}`}
+          >
+            {hasVariants
+              ? product.availableVariants!.map((v) => (
+                  <option key={v.weight} value={v.weight}>
+                    {v.weight}
+                  </option>
+                ))
+              : (
+                  <option value={product.weight}>{product.weight}</option>
+                )}
+          </select>
+          <ChevronDown size={12} className="product-variant-chevron" />
+        </div>
         <h3 className="product-title-text" title={product.name}>
           {product.name}
         </h3>

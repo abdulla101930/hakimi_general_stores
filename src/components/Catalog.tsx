@@ -2,18 +2,7 @@ import { useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { FOOD_SUBDIVISIONS, HYGIENE_SUBDIVISIONS } from '../lib/constants';
 import { ProductCard } from './ProductCard';
-import { Search, Mic, ChevronRight, X } from 'lucide-react';
-
-type SpeechRecognitionLike = {
-  lang: string;
-  interimResults: boolean;
-  maxAlternatives: number;
-  start: () => void;
-  stop: () => void;
-  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
-  onerror: ((event: unknown) => void) | null;
-  onend: (() => void) | null;
-};
+import { Search, ChevronRight, X } from 'lucide-react';
 
 export function Catalog() {
   const { catalog } = useApp();
@@ -21,38 +10,6 @@ export function Catalog() {
   const [selectedSubCat, setSelectedSubCat] = useState<string>('All');
   const [dietaryFilter, setDietaryFilter] = useState<'all' | 'veg' | 'non-veg'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isListening, setIsListening] = useState(false);
-
-  const handleMicClick = () => {
-    const Ctor =
-      (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike }).SpeechRecognition ||
-      (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionLike }).webkitSpeechRecognition;
-    if (!Ctor) {
-      alert('Voice search is not supported in this browser. Please type your search.');
-      return;
-    }
-    if (isListening) return;
-    const recognition = new Ctor();
-    recognition.lang = 'en-IN';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.onresult = (event) => {
-      const results = event.results;
-      let transcript = '';
-      for (let i = 0; i < results.length; i++) {
-        if (results[i] && results[i][0]) transcript += results[i][0].transcript;
-      }
-      if (transcript.trim()) setSearchQuery(transcript.trim());
-    };
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
-    setIsListening(true);
-    try {
-      recognition.start();
-    } catch {
-      setIsListening(false);
-    }
-  };
 
   const activeSubdivisions = selectedMainCat === 'Food' ? FOOD_SUBDIVISIONS : HYGIENE_SUBDIVISIONS;
 
@@ -87,16 +44,7 @@ export function Catalog() {
             <button type="button" className="catalog-search-clear" onClick={() => setSearchQuery('')}>
               <X size={16} />
             </button>
-          ) : (
-            <button
-              type="button"
-              className={`catalog-mic ${isListening ? 'listening' : ''}`}
-              onClick={handleMicClick}
-              title={isListening ? 'Listening...' : 'Search by voice'}
-            >
-              <Mic size={18} color={isListening ? '#2563eb' : '#64748b'} />
-            </button>
-          )}
+          ) : null}
         </div>
       </div>
 

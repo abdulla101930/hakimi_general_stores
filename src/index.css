@@ -48,7 +48,7 @@
   --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.12);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
-  --header-h: 128px;
+  --header-h: 91px;
   --max-w: 900px;
 }
 
@@ -80,7 +80,7 @@ body {
     'Helvetica Neue',
     Arial,
     sans-serif;
-  background: linear-gradient(180deg, #e0f2fe 0%, var(--bg-main) 42%, #fef3c7 130%);
+  background: var(--bg-main);
   color: var(--text-main);
   line-height: 1.45;
   overscroll-behavior-y: contain;
@@ -492,39 +492,6 @@ a {
   padding: 4px;
 }
 
-.catalog-mic {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: none;
-  background: transparent;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.2s var(--ease-out), transform 0.15s var(--ease-out);
-}
-
-.catalog-mic:active {
-  transform: scale(0.88);
-}
-
-.catalog-mic.listening {
-  background: var(--accent-orange-bg);
-  animation: micPulse 1.1s var(--ease-out) infinite;
-}
-
-@keyframes micPulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.45);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(249, 115, 22, 0);
-  }
-}
-
 .main-category-dual-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -675,7 +642,9 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  background: var(--bg-main);
+  background: var(--bg-sheet);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
   padding: 8px 0 10px;
 }
 
@@ -804,21 +773,13 @@ a {
 
 .product-img-container {
   position: relative;
-  height: 100px;
+  height: 104px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
+  background: #fff;
   border-radius: var(--radius-md);
   overflow: hidden;
-}
-
-.card-food .product-img-container {
-  background: linear-gradient(150deg, #fef3c7 0%, #fed7aa 55%, #fdba74 130%);
-}
-
-.card-hygiene .product-img-container {
-  background: linear-gradient(150deg, #ede9fe 0%, #fbcfe8 55%, #c4b5fd 130%);
 }
 
 .product-like-btn {
@@ -872,9 +833,8 @@ a {
 }
 
 .product-emoji-render {
-  font-size: 44px;
+  font-size: 50px;
   line-height: 1;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
 }
 
 .product-img-render {
@@ -882,9 +842,8 @@ a {
   height: 100%;
   min-width: 0;
   min-height: 0;
-  object-fit: contain;
-  padding: 8px;
-  background: transparent;
+  object-fit: cover;
+  transform: scale(1.05);
 }
 
 .product-out-of-stock {
@@ -903,22 +862,6 @@ a {
 
 .product-info-box {
   min-height: 34px;
-}
-
-.product-weight-tag {
-  display: inline-block;
-  font-size: 9.5px;
-  font-weight: 800;
-  color: var(--accent-purple-dark);
-  background: var(--accent-purple-bg);
-  border-radius: 6px;
-  padding: 2px 7px;
-  margin-bottom: 4px;
-}
-
-.card-food .product-weight-tag {
-  color: var(--accent-orange-dark);
-  background: var(--accent-orange-bg);
 }
 
 .product-variant-select-wrap {
@@ -1496,37 +1439,6 @@ a {
 
 .instruction-card.selected .instruction-card-text {
   color: var(--primary-dark);
-}
-
-.instruction-card-record {
-  border-style: dashed;
-  border-color: var(--border-subtle);
-}
-
-.instruction-card-record.recording {
-  border-color: var(--error);
-  background: var(--error-bg);
-  animation: recordPulse 0.9s var(--ease-out) infinite;
-}
-
-.instruction-card-record.recording .instruction-card-text {
-  color: var(--error);
-}
-
-@keyframes recordPulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.35);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(220, 38, 38, 0);
-  }
-}
-
-.voice-note-player {
-  width: 100%;
-  height: 40px;
-  margin-top: 10px;
 }
 
 .address-selector-section {
@@ -2373,17 +2285,6 @@ a {
 .inst-card-box.active {
   border-color: var(--primary);
   background: var(--primary-light);
-}
-
-.inst-card-record {
-  border-style: dashed;
-  border-color: var(--border-subtle);
-}
-
-.inst-card-record.recording {
-  border-color: var(--error);
-  background: var(--error-bg);
-  animation: recordPulse 0.9s var(--ease-out) infinite;
 }
 
 .inst-top-row {

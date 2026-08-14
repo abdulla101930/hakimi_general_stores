@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react';
 import { useApp } from '../context/AppContext';
 import { computeBill, computeCouponSavings } from '../lib/billing';
 import { sendCheckoutOrderToWhatsApp } from '../lib/whatsapp';
-import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import {
   ArrowLeft,
   Trash2,
@@ -14,7 +13,6 @@ import {
   BellOff,
   PhoneOff,
   Shield,
-  Mic,
   ChevronRight,
   HandHelping
 } from 'lucide-react';
@@ -28,7 +26,6 @@ const NO_INSTRUCTION = 'No delivery instructions';
 
 const INSTRUCTION_OPTIONS = [
   { id: 'none', label: NO_INSTRUCTION, sub: 'Deliver normally', icon: HandHelping },
-  { id: 'record', label: 'Record voice', sub: 'Press here and hold', icon: Mic },
   { id: 'door', label: 'Leave at door', sub: 'Ring bell & drop', icon: BellOff },
   { id: 'guard', label: 'Leave with guard', sub: 'Security gate', icon: Shield },
   { id: 'call', label: 'Avoid calling', sub: 'Silent delivery', icon: PhoneOff }
@@ -54,10 +51,7 @@ export function CartPage({ onOpenMap }: CartPageProps) {
 
   const [couponCode, setCouponCode] = useState('');
   const [selectedInstruction, setSelectedInstruction] = useState<string>(NO_INSTRUCTION);
-  const [voiceNoteUrl, setVoiceNoteUrl] = useState<string | null>(null);
   const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
-
-  const { isRecording, startRecording, stopRecording } = useVoiceRecorder();
 
   const cartItems = resolveCartLines();
 
@@ -94,23 +88,6 @@ export function CartPage({ onOpenMap }: CartPageProps) {
       setCouponCode('');
     } else {
       alert(result.message);
-    }
-  };
-
-  const handleVoiceHold = async () => {
-    await startRecording();
-  };
-
-  const handleVoiceRelease = () => {
-    const result = stopRecording();
-    if (!result) return;
-    if (result.transcript) {
-      setSelectedInstruction(`🎙️ ${result.transcript}`);
-    } else if (result.audioUrl) {
-      setSelectedInstruction(`🎙️ Voice note recorded (${Math.max(1, Math.round(result.durationMs / 1000))}s)`);
-      setVoiceNoteUrl(result.audioUrl);
-    } else {
-      setSelectedInstruction(NO_INSTRUCTION);
     }
   };
 
@@ -353,28 +330,6 @@ export function CartPage({ onOpenMap }: CartPageProps) {
               {INSTRUCTION_OPTIONS.map((inst) => {
                 const Icon = inst.icon;
                 const isSelected = selectedInstruction === inst.label;
-                if (inst.id === 'record') {
-                  return (
-                    <div
-                      key={inst.id}
-                      className={`inst-card-box inst-card-record ${isRecording ? 'recording' : ''} ${selectedInstruction.startsWith('🎙️') ? 'active' : ''}`}
-                      role="button"
-                      onPointerDown={handleVoiceHold}
-                      onPointerUp={handleVoiceRelease}
-                      onPointerLeave={() => {
-                        if (isRecording) handleVoiceRelease();
-                      }}
-                      onContextMenu={(e) => e.preventDefault()}
-                    >
-                      <div className="inst-top-row">
-                        <Icon size={18} color={isRecording ? '#dc2626' : isSelected ? '#2563eb' : '#64748b'} />
-                        {isSelected && <Check size={14} className="inst-check" />}
-                      </div>
-                      <span className="inst-label-title">{isRecording ? 'Recording...' : inst.label}</span>
-                      <span className="inst-subtext">{isRecording ? 'Release to finish' : inst.sub}</span>
-                    </div>
-                  );
-                }
                 return (
                   <button
                     key={inst.id}
@@ -392,7 +347,6 @@ export function CartPage({ onOpenMap }: CartPageProps) {
                 );
               })}
             </div>
-            {voiceNoteUrl && <audio controls src={voiceNoteUrl} className="voice-note-player" />}
           </div>
 
           <div className="delivering-to-bar">
