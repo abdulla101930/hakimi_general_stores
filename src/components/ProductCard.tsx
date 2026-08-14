@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { cartKeyOf, getProductOriginalPrice, getProductPrice } from '../lib/cart';
 import type { Product } from '../types';
+import { QtyPickerSheet } from './QtyPickerSheet';
 import { Plus, Minus, Heart, ChevronDown } from 'lucide-react';
 
 interface ProductCardProps {
@@ -12,10 +13,12 @@ export function ProductCard({ product }: ProductCardProps) {
   const { cart, addToCart, removeFromCart } = useApp();
   const [selectedWeight, setSelectedWeight] = useState(product.weight);
   const [isLiked, setIsLiked] = useState(false);
+  const [isQtyPickerOpen, setIsQtyPickerOpen] = useState(false);
 
   const price = getProductPrice(product, selectedWeight);
   const originalPrice = getProductOriginalPrice(product, selectedWeight);
   const hasVariants = Array.isArray(product.availableVariants) && product.availableVariants.length > 0;
+  const hasMultiVariant = hasVariants && product.availableVariants!.length > 1;
 
   const effectiveOriginal = originalPrice && originalPrice > price ? originalPrice : undefined;
   const discountPercent = effectiveOriginal
@@ -26,6 +29,14 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const isEmoji = !product.image.startsWith('http') && !product.image.startsWith('/');
   const isHygiene = product.mainCategory === 'Hygiene';
+
+  const handleAdd = () => {
+    if (hasMultiVariant) {
+      setIsQtyPickerOpen(true);
+    } else {
+      addToCart(product.id, selectedWeight);
+    }
+  };
 
   return (
     <div className={`product-card ${isHygiene ? 'card-hygiene' : 'card-food'}`}>
@@ -112,11 +123,7 @@ export function ProductCard({ product }: ProductCardProps) {
         {product.inStock && (
           <div>
             {quantity === 0 ? (
-              <button
-                type="button"
-                className="btn-add-action"
-                onClick={() => addToCart(product.id, selectedWeight)}
-              >
+              <button type="button" className="btn-add-action" onClick={handleAdd}>
                 ADD
               </button>
             ) : (
@@ -141,6 +148,8 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
       </div>
+
+      <QtyPickerSheet product={product} open={isQtyPickerOpen} onClose={() => setIsQtyPickerOpen(false)} />
     </div>
   );
 }
