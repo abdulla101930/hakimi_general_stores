@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { Catalog } from './components/Catalog';
 import { Cart } from './components/Cart';
+import { Toasts } from './components/Toasts';
 import { LoginModal } from './components/LoginModal';
 import { DeliveryTracking } from './components/DeliveryTracking';
 import { OwnerDashboard } from './components/OwnerDashboard';
@@ -12,125 +13,52 @@ import { DevLogsModal } from './components/DevLogsModal';
 import { MaintenancePage } from './components/MaintenancePage';
 import { CartPage } from './components/CartPage';
 import { MagicBottomNav } from './components/MagicBottomNav';
+import { useToast } from './hooks/useToast';
+import { startOwnerRingingAlarm, stopOwnerRingingAlarm, showNotification } from './lib/sound';
 import { ArrowRight } from 'lucide-react';
-import type { Address } from './context/AppContext';
+import type { Address } from './types';
 
-interface Toast {
-  id: string;
-  message: string;
-  type: 'info' | 'success' | 'warning';
-}
-
-let alarmIntervalId: any = null;
-let alarmTimeoutId: any = null;
-
-export const startOwnerRingingAlarm = () => {
-  stopOwnerRingingAlarm();
-
-  const playSingleChime = () => {
-    try {
-      const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtxClass) return;
-      const audioCtx = new AudioCtxClass();
-      const osc1 = audioCtx.createOscillator();
-      const osc2 = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-
-      osc1.connect(gainNode);
-      osc2.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-
-      osc1.type = 'triangle';
-      osc2.type = 'sine';
-
-      const now = audioCtx.currentTime;
-      // High pitch double-chime bell ring (Store Order Alarm)
-      osc1.frequency.setValueAtTime(880, now);
-      osc1.frequency.setValueAtTime(1174.66, now + 0.15);
-      osc2.frequency.setValueAtTime(1318.51, now + 0.3);
-
-      gainNode.gain.setValueAtTime(0.25, now);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
-
-      osc1.start(now);
-      osc2.start(now + 0.15);
-      osc1.stop(now + 0.9);
-      osc2.stop(now + 0.9);
-    } catch (e) {
-      console.warn("Alarm chime audio policy:", e);
-    }
-  };
-
-  playSingleChime();
-  alarmIntervalId = setInterval(playSingleChime, 1200);
-
-  alarmTimeoutId = setTimeout(() => {
-    stopOwnerRingingAlarm();
-  }, 60000); // Ring continuously for 1 minute (60 seconds)
-};
-
-export const stopOwnerRingingAlarm = () => {
-  if (alarmIntervalId) {
-    clearInterval(alarmIntervalId);
-    alarmIntervalId = null;
-  }
-  if (alarmTimeoutId) {
-    clearTimeout(alarmTimeoutId);
-    alarmTimeoutId = null;
-  }
-};
-
-const MainLayout: React.FC = () => {
+function MainLayout() {
   const { currentView, cart, activeOrder, setView, role, orders, addNewAddress, setSelectedAddress, isMaintenanceMode } = useApp();
-  
-  // Modals state
+
   const [isMapOpen, setMapOpen] = useState(false);
   const [isPWAOpen, setPWAOpen] = useState(false);
   const [isDevLogsOpen, setDevLogsOpen] = useState(false);
 
-  // Notification states
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const { toasts, addToast, dismissToast } = useToast();
   const [lastOrderStatus, setLastOrderStatus] = useState<string | null>(null);
   const [lastOrdersCount, setLastOrdersCount] = useState<number | null>(null);
 
-  // Developer Audit Console Trigger Listeners
   useEffect(() => {
     const triggerLogs = () => {
       setDevLogsOpen(true);
-      return "Opening Developer Audit Console...";
+      return 'Opening Developer Audit Console...';
     };
 
-    // Attach to global window
-    Object.defineProperty(window, 'showDevLogs', {
-      value: triggerLogs,
-      writable: true,
-      configurable: true
-    });
-    (window as any).__HAKIMI_DEV_LOGS__ = triggerLogs;
-    (window as any).devlogs = triggerLogs;
+    const devWindow = window as unknown as Record<string, unknown>;
+    devWindow.showDevLogs = triggerLogs;
+    devWindow.__HAKIMI_DEV_LOGS__ = triggerLogs;
+    devWindow.devlogs = triggerLogs;
 
-    // Log developer welcome message in browser console once
     console.log(
-      "%c[DEVELOPER AUDIT SYSTEM ACTIVE] %cType %cshowDevLogs()%c or press %cCtrl+Shift+L%c or add %c#devlogs%c to URL to inspect owner logs.",
-      "color: #2563eb; font-weight: bold;",
-      "color: #475569;",
-      "color: #10b981; font-weight: bold; font-family: monospace;",
-      "color: #475569;",
-      "color: #f59e0b; font-weight: bold;",
-      "color: #475569;",
-      "color: #8b5cf6; font-weight: bold; font-family: monospace;",
-      "color: #475569;"
+      '%c[DEVELOPER AUDIT SYSTEM ACTIVE] %cType %cshowDevLogs()%c or press %cCtrl+Shift+L%c or add %c#devlogs%c to URL to inspect owner logs.',
+      'color: #2563eb; font-weight: bold;',
+      'color: #475569;',
+      'color: #10b981; font-weight: bold; font-family: monospace;',
+      'color: #475569;',
+      'color: #f59e0b; font-weight: bold;',
+      'color: #475569;',
+      'color: #8b5cf6; font-weight: bold; font-family: monospace;',
+      'color: #475569;'
     );
 
-    // 2. Keyboard shortcut (Ctrl + Shift + L)
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'l') {
         e.preventDefault();
-        setDevLogsOpen(prev => !prev);
+        setDevLogsOpen((prev) => !prev);
       }
     };
 
-    // 3. Hash listener (#devlogs)
     const checkHash = () => {
       if (window.location.hash === '#devlogs') {
         setDevLogsOpen(true);
@@ -147,10 +75,8 @@ const MainLayout: React.FC = () => {
     };
   }, []);
 
-  // Calculate item count for floating active order banner
   const totalItems = Object.values(cart).reduce((sum, count) => sum + count, 0);
 
-  // Request browser Notification permissions on mount
   useEffect(() => {
     try {
       if (typeof window !== 'undefined' && 'Notification' in window && typeof Notification.requestPermission === 'function' && Notification.permission === 'default') {
@@ -164,104 +90,48 @@ const MainLayout: React.FC = () => {
     }
   }, []);
 
-  const playNotificationSound = (isOwnerAlert = false) => {
-    try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc1 = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-      osc1.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      
-      osc1.type = 'sine';
-      gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
-
-      if (isOwnerAlert) {
-        const osc2 = audioCtx.createOscillator();
-        osc2.connect(gainNode);
-        osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime);
-        osc1.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.12);
-        osc2.frequency.setValueAtTime(783.99, audioCtx.currentTime);
-        osc2.frequency.setValueAtTime(1046.50, audioCtx.currentTime + 0.12);
-        
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-        osc2.start();
-        osc2.stop(audioCtx.currentTime + 0.4);
-      } else {
-        osc1.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
-      }
-      
-      osc1.start();
-      osc1.stop(audioCtx.currentTime + 0.4);
-    } catch (e) {
-      console.warn("Audio feedback blocked by browser settings:", e);
-    }
-  };
-
-  const addToast = (message: string, type: 'info' | 'success' | 'warning' = 'info') => {
-    const id = Math.random().toString();
-    setToasts(prev => [...prev, { id, message, type }]);
-    playNotificationSound(type === 'info');
-
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-    }, 4500);
-  };
-
   useEffect(() => {
-    if (!activeOrder) {
+    const status = activeOrder?.status ?? null;
+    if (!status) {
       setLastOrderStatus(null);
       return;
     }
 
-    if (lastOrderStatus && activeOrder.status !== lastOrderStatus) {
+    if (lastOrderStatus && status !== lastOrderStatus) {
       let message = '';
-      if (activeOrder.status === 'packing') {
+      if (status === 'packing') {
         message = '📦 Order Confirmed: Hakimi staff is packing your items!';
-      } else if (activeOrder.status === 'out_for_delivery') {
+      } else if (status === 'out_for_delivery') {
         message = '🛵 Order Out: Delivery partner is on their way!';
-      } else if (activeOrder.status === 'delivered') {
+      } else if (status === 'delivered') {
         message = '🎁 Order Arrived: Thank you for shopping with Hakimi!';
       }
 
       if (message) {
         addToast(message, 'success');
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Hakimi Supermarket', { body: message, icon: '/favicon.svg' });
-        }
+        showNotification('Hakimi Supermarket', message);
       }
     }
-    setLastOrderStatus(activeOrder.status);
-  }, [activeOrder?.status]);
+    setLastOrderStatus(status);
+  }, [activeOrder?.status, lastOrderStatus, addToast]);
 
-  // 1. Owner New Order Alarm (Rings continuously for 1 min on new order)
   useEffect(() => {
     if (role !== 'owner') return;
 
     if (lastOrdersCount !== null && orders.length > lastOrdersCount) {
       const newestOrder = orders[0];
-      const alertMsg = `🔔 NEW ORDER #${newestOrder?.id} received! (₹${newestOrder?.bill.grandTotal})`;
-      addToast(alertMsg, 'info');
-
-      // Play 1-minute ringing alarm for owner
+      addToast(`🔔 NEW ORDER #${newestOrder?.id} received! (₹${newestOrder?.bill.grandTotal})`, 'info');
       startOwnerRingingAlarm();
-
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Hakimi Supermarket - New Order!', {
-          body: `${newestOrder?.customerName} placed an order for ₹${newestOrder?.bill.grandTotal}`,
-          icon: '/favicon.svg'
-        });
-      }
+      showNotification('Hakimi Supermarket - New Order!', `${newestOrder?.customerName} placed an order for ₹${newestOrder?.bill.grandTotal}`);
     }
     setLastOrdersCount(orders.length);
-  }, [orders.length, role]);
+  }, [orders, role, addToast, lastOrdersCount]);
 
-  // 2. Owner Unaccepted Order 5-Minute Reminder Alarm
   useEffect(() => {
     if (role !== 'owner') return;
 
     const checkAndRingUnaccepted = () => {
-      const hasUnaccepted = orders.some(o => o.status === 'placed');
+      const hasUnaccepted = orders.some((o) => o.status === 'placed');
       if (hasUnaccepted) {
         startOwnerRingingAlarm();
         addToast('🔔 REMINDER: Unaccepted order waiting! Alarm ringing...', 'warning');
@@ -270,16 +140,14 @@ const MainLayout: React.FC = () => {
       }
     };
 
-    // Auto-stop alarm if all orders are accepted
-    const hasUnaccepted = orders.some(o => o.status === 'placed');
+    const hasUnaccepted = orders.some((o) => o.status === 'placed');
     if (!hasUnaccepted) {
       stopOwnerRingingAlarm();
     }
 
-    // Interval to repeat alarm every 5 minutes (300,000 ms) for unaccepted orders
     const intervalId = setInterval(checkAndRingUnaccepted, 300000);
     return () => clearInterval(intervalId);
-  }, [orders, role]);
+  }, [orders, role, addToast]);
 
   const handleSelectMapAddress = (addr: Address) => {
     addNewAddress(addr);
@@ -289,57 +157,8 @@ const MainLayout: React.FC = () => {
 
   return (
     <div className="app-shell">
-      {/* Toast Banners */}
-      <div style={{
-        position: 'fixed',
-        top: '12px',
-        left: '16px',
-        right: '16px',
-        zIndex: 9999,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        pointerEvents: 'none'
-      }}>
-        {toasts.map(toast => (
-          <div
-            key={toast.id}
-            style={{
-              pointerEvents: 'auto',
-              backgroundColor: '#0f172a',
-              color: '#ffffff',
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '12px',
-              fontWeight: 600,
-              boxShadow: 'var(--shadow-lg)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              borderLeft: toast.type === 'success' ? '4px solid #16a34a' : '4px solid #2563eb',
-            }}
-          >
-            <span style={{ flex: 1 }}>{toast.message}</span>
-            <button
-              onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'inherit',
-                opacity: 0.6,
-                cursor: 'pointer',
-                marginLeft: '10px',
-                fontWeight: 700,
-                fontSize: '12px'
-              }}
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-      </div>
+      <Toasts toasts={toasts} onDismiss={dismissToast} />
 
-      {/* Main View Area */}
       {isMaintenanceMode && role !== 'owner' ? (
         <MaintenancePage />
       ) : currentView === 'admin' ? (
@@ -350,47 +169,25 @@ const MainLayout: React.FC = () => {
         <CartPage onOpenMap={() => setMapOpen(true)} />
       ) : (
         <>
-          {/* Header */}
-          <Navbar 
-            onOpenPWA={() => setPWAOpen(true)}
-            onOpenMap={() => setMapOpen(true)}
-          />
-          
-          {/* Scrollable Product Catalog Section */}
+          <Navbar onOpenPWA={() => setPWAOpen(true)} onOpenMap={() => setMapOpen(true)} />
+
           <div className="main-content-scroll">
             <Catalog />
           </div>
 
-          {/* Active Order Tracker Banner */}
           {activeOrder && !isMapOpen && !isPWAOpen && !isDevLogsOpen && (
-            <div 
+            <div
               onClick={() => setView('tracking')}
-              style={{
-                position: 'fixed',
-                bottom: totalItems > 0 ? '84px' : '20px',
-                left: '16px',
-                right: '16px',
-                maxWidth: '600px',
-                margin: '0 auto',
-                backgroundColor: 'rgba(37, 99, 235, 0.96)',
-                backdropFilter: 'blur(8px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: 'var(--radius-lg)',
-                padding: '12px 16px',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-                boxShadow: 'var(--shadow-lg)',
-                zIndex: 45
-              }}
+              className="active-order-banner"
+              style={{ bottom: totalItems > 0 ? '84px' : '20px' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: '20px' }}>🛵</span>
                 <div>
                   <h4 style={{ fontSize: '12px', fontWeight: 800, margin: 0 }}>Active Delivery in Progress</h4>
-                  <p style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>Status: {activeOrder.status.replace(/_/g, ' ')}</p>
+                  <p style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
+                    Status: {activeOrder.status.replace(/_/g, ' ')}
+                  </p>
                 </div>
               </div>
               <span style={{ fontSize: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -401,33 +198,16 @@ const MainLayout: React.FC = () => {
         </>
       )}
 
-      {/* Magic Bottom Navigation Menu */}
-      {currentView !== 'admin' && (
-        <MagicBottomNav 
-          onOpenPWA={() => setPWAOpen(true)} 
-          isModalOpen={isMapOpen || isPWAOpen || isDevLogsOpen}
-        />
-      )}
+      {currentView !== 'admin' && <MagicBottomNav isModalOpen={isMapOpen || isPWAOpen || isDevLogsOpen} />}
 
-      {/* Drawers and Modals */}
       <Cart onOpenMap={() => setMapOpen(true)} />
       <LoginModal />
-      <MapPickerModal
-        isOpen={isMapOpen}
-        onClose={() => setMapOpen(false)}
-        onSelectAddress={handleSelectMapAddress}
-      />
-      <PWAInstallModal
-        isOpen={isPWAOpen}
-        onClose={() => setPWAOpen(false)}
-      />
-      <DevLogsModal
-        isOpen={isDevLogsOpen}
-        onClose={() => setDevLogsOpen(false)}
-      />
+      <MapPickerModal isOpen={isMapOpen} onClose={() => setMapOpen(false)} onSelectAddress={handleSelectMapAddress} />
+      <PWAInstallModal isOpen={isPWAOpen} onClose={() => setPWAOpen(false)} />
+      <DevLogsModal isOpen={isDevLogsOpen} onClose={() => setDevLogsOpen(false)} />
     </div>
   );
-};
+}
 
 function App() {
   return (

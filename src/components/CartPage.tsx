@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useApp } from '../context/AppContext';
-import { 
-  ArrowLeft, 
-  Trash2, 
-  Plus, 
-  Minus, 
-  Tag, 
-  Check, 
+import { computeBill, computeCouponSavings } from '../lib/billing';
+import { sendCheckoutOrderToWhatsApp } from '../lib/whatsapp';
+import {
+  ArrowLeft,
+  Trash2,
+  Plus,
+  Minus,
+  Tag,
+  Check,
   ShoppingBag,
   BellOff,
   PhoneOff,
@@ -14,20 +16,26 @@ import {
   Mic,
   ChevronRight
 } from 'lucide-react';
-
 import { PaymentModal } from './PaymentModal';
 
 interface CartPageProps {
   onOpenMap: () => void;
 }
 
-export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
-  const { 
-    cart, 
-    catalog, 
-    removeFromCart, 
-    addToCart, 
-    clearCart, 
+const INSTRUCTION_OPTIONS = [
+  { id: 'record', label: 'Record voice', sub: 'Press here and hold', icon: Mic },
+  { id: 'door', label: 'Leave at door', sub: 'Ring bell & drop', icon: BellOff },
+  { id: 'guard', label: 'Leave with guard', sub: 'Security gate', icon: Shield },
+  { id: 'call', label: 'Avoid calling', sub: 'Silent delivery', icon: PhoneOff }
+];
+
+export function CartPage({ onOpenMap }: CartPageProps) {
+  const {
+    cart,
+    catalog,
+    removeFromCart,
+    addToCart,
+    clearCart,
     selectedAddress,
     setLoginOpen,
     user,
@@ -37,30 +45,41 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
     applyCoupon,
     removeCoupon,
     freeDeliveryThreshold,
-    getDeliveryCharge
+    deliverySettings
   } = useApp();
 
   const [couponCode, setCouponCode] = useState('');
   const [selectedInstruction, setSelectedInstruction] = useState<string>('Avoid calling');
   const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
 
-  // Filter items in cart
   const cartItems = Object.entries(cart)
     .map(([id, qty]) => {
-      const product = catalog.find(p => p.id === id);
+      const product = catalog.find((p) => p.id === id);
       return { product, qty };
     })
-    .filter(item => item.product !== undefined && item.qty > 0) as { product: NonNullable<ReturnType<typeof catalog.find>>; qty: number }[];
+    .filter((item) => item.product !== undefined && item.qty > 0) as {
+    product: NonNullable<typeof catalog[number]>;
+    qty: number;
+  }[];
 
-  const itemsTotal = cartItems.reduce((sum, item) => sum + item.product.price * item.qty, 0);
-  const discountAmount = appliedCoupon ? appliedCoupon.value : 0;
-  const isFreeDelivery = itemsTotal >= freeDeliveryThreshold;
-  const deliveryCharge = getDeliveryCharge(itemsTotal, selectedAddress);
-  const grandTotal = Math.max(0, itemsTotal - discountAmount + deliveryCharge);
+  const bill = computeBill({
+    items: cartItems.map(({ product, qty }) => ({ price: product.price, quantity: qty, handlingFee: product.handlingFee })),
+    settings: deliverySettings,
+    address: selectedAddress,
+    coupon: appliedCoupon
+  });
 
+  const couponSavings = computeCouponSavings({
+    items: cartItems.map(({ product, qty }) => ({ price: product.price, quantity: qty, handlingFee: product.handlingFee })),
+    settings: deliverySettings,
+    address: selectedAddress,
+    coupon: appliedCoupon
+  });
+
+  const isFreeDelivery = bill.itemsTotal >= freeDeliveryThreshold;
   const totalItems = cartItems.reduce((sum, item) => sum + item.qty, 0);
 
-  const handleApplyCoupon = (e: React.FormEvent) => {
+  const handleApplyCoupon = (e: FormEvent) => {
     e.preventDefault();
     if (!couponCode.trim()) return;
     const result = applyCoupon(couponCode.trim());
@@ -72,11 +91,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
   };
 
   const handleOpenPaymentGateway = () => {
-    if (!user) {
-      setLoginOpen(true);
-      return;
-    }
-    if (!selectedAddress) {
+    if (!user || !selectedAddress) {
       setLoginOpen(true);
       return;
     }
@@ -85,64 +100,24 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
 
   const handleProcessOrderPayment = (paymentMethod: 'COD' | 'ONLINE', paymentDetails?: string) => {
     setPaymentModalOpen(false);
-
     const paymentStatus = paymentMethod === 'ONLINE' ? 'Paid (Online)' : 'Pending';
     const newOrder = createOrder(selectedInstruction, paymentMethod, paymentStatus);
-
-    // Format WhatsApp message
-    const storeNumber = '919993949604'; // Owner WhatsApp contact (+91 99939 49604)
-    let msg = `🛒 *NEW ORDER - HAKIMI GENERAL STORE*\n`;
-    msg += `------------------------------------\n`;
-    msg += `👤 *Customer:* ${newOrder.customerName} (${newOrder.customerPhone})\n`;
-    msg += `📍 *Delivery Address:* ${newOrder.address.type} - ${newOrder.address.details}\n`;
-    msg += `📋 *Instruction:* ${selectedInstruction}\n`;
-    msg += `💳 *Payment Method:* ${paymentMethod === 'ONLINE' ? '🟢 ONLINE PAYMENT' : '💵 CASH ON DELIVERY (COD)'}\n`;
-    msg += `📊 *Payment Status:* ${paymentStatus} ${paymentDetails ? `(${paymentDetails})` : ''}\n\n`;
-    msg += `📦 *ORDER ITEMS:*\n`;
-
-    newOrder.items.forEach((item, index) => {
-      msg += `${index + 1}. ${item.name} (${item.weight}) x ${item.quantity} = ₹${item.price * item.quantity}\n`;
+    const waUrl = sendCheckoutOrderToWhatsApp(newOrder, {
+      instruction: selectedInstruction,
+      paymentDetails
     });
-
-    msg += `\n------------------------------------\n`;
-    msg += `💵 *Item Total:* ₹${newOrder.bill.itemsTotal}\n`;
-    if (newOrder.bill.discount > 0) msg += `🎟️ *Discount:* -₹${newOrder.bill.discount}\n`;
-    msg += `🚚 *Delivery Fee:* ${newOrder.bill.deliveryCharge === 0 ? 'FREE' : `₹${newOrder.bill.deliveryCharge}`}\n`;
-    msg += `💰 *TOTAL PAYABLE:* ₹${newOrder.bill.grandTotal}\n`;
-    msg += `------------------------------------\n`;
-    msg += `Please confirm and dispatch my order! Thank you.`;
-
-    const encodedMsg = encodeURIComponent(msg);
-    const waUrl = `https://api.whatsapp.com/send?phone=${storeNumber}&text=${encodedMsg}`;
-    
     window.open(waUrl, '_blank');
   };
 
   if (cartItems.length === 0) {
     return (
-      <div style={{ padding: '40px 16px 120px', minHeight: '80vh', background: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+      <div className="cart-page-empty">
+        <div className="cart-page-empty-icon">
           <ShoppingBag size={40} color="#2563eb" />
         </div>
-        <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Your Cart is Empty</h2>
-        <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px', textAlign: 'center', maxWidth: '300px' }}>
-          Looks like you haven't added anything to your basket yet.
-        </p>
-        <button
-          type="button"
-          onClick={() => setView('catalog')}
-          style={{
-            background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-            color: '#ffffff',
-            border: 'none',
-            padding: '12px 28px',
-            borderRadius: '12px',
-            fontSize: '14px',
-            fontWeight: 800,
-            cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
-          }}
-        >
+        <h2>Your Cart is Empty</h2>
+        <p>Looks like you haven't added anything to your basket yet.</p>
+        <button type="button" className="cart-page-empty-btn" onClick={() => setView('catalog')}>
           Browse Products
         </button>
       </div>
@@ -151,92 +126,68 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
 
   return (
     <div className="cart-page-container">
-      {/* 1. Top Navigation Bar */}
       <div className="cart-page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button 
-            type="button" 
-            className="cart-back-btn"
-            onClick={() => setView('catalog')}
-          >
+        <div className="cart-page-header-title-wrap">
+          <button type="button" className="cart-back-btn" onClick={() => setView('catalog')}>
             <ArrowLeft size={18} color="#1e293b" />
           </button>
           <div>
-            <h1 style={{ fontSize: '18px', fontWeight: 900, color: '#0f172a', margin: 0 }}>My Cart</h1>
-            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+            <h1>My Cart</h1>
+            <span>
               {totalItems} {totalItems === 1 ? 'item' : 'items'} in basket
             </span>
           </div>
         </div>
-
-        <button 
-          type="button" 
-          onClick={clearCart}
-          className="cart-clear-btn"
-        >
+        <button type="button" onClick={clearCart} className="cart-clear-btn">
           <Trash2 size={15} />
           <span>Clear</span>
         </button>
       </div>
 
-      {/* 2. Main Content 2-Column Grid */}
       <div className="cart-content-grid">
-        {/* Left Column: Cart Items (SS 5) & Coupons */}
         <div className="cart-left-col">
-          
-          {/* Free Delivery Banner matching SS 6 Top Card */}
           <div className="free-delivery-top-card">
             <div className="free-del-main-row">
-              <div className="scooter-icon-box">
-                🛵
-              </div>
+              <div className="scooter-icon-box">🛵</div>
               <div className="free-del-text-col">
                 <span className="free-del-title">
                   {isFreeDelivery ? '🎉 You unlocked FREE delivery!' : 'Get FREE delivery'}
                 </span>
                 <span className="free-del-subtext">
-                  {!isFreeDelivery 
-                    ? `Add products worth ₹${freeDeliveryThreshold - itemsTotal} more ›`
+                  {!isFreeDelivery
+                    ? `Add products worth ₹${freeDeliveryThreshold - bill.itemsTotal} more ›`
                     : 'Your order qualifies for zero delivery fees!'}
                 </span>
-                {/* Progress Bar */}
                 <div className="del-progress-track">
-                  <div 
-                    className="del-progress-fill" 
-                    style={{ width: `${Math.min(100, (itemsTotal / freeDeliveryThreshold) * 100)}%` }} 
+                  <div
+                    className="del-progress-fill"
+                    style={{ width: `${Math.min(100, (bill.itemsTotal / freeDeliveryThreshold) * 100)}%` }}
                   />
                 </div>
               </div>
             </div>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="see-coupons-link"
-              onClick={() => {
-                const el = document.getElementById('coupon-section');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
+              onClick={() => document.getElementById('coupon-section')?.scrollIntoView({ behavior: 'smooth' })}
             >
               <span>See all coupons</span>
               <ChevronRight size={14} />
             </button>
           </div>
 
-          {/* Cart Product Items (SS 5) */}
           <div className="cart-section-box">
             <h2 className="cart-section-title">Items in Cart ({totalItems})</h2>
             <div className="cart-items-list">
               {cartItems.map(({ product, qty }) => (
                 <div key={product.id} className="cart-item-row-ss5">
-                  {/* Thumbnail Image */}
                   <div className="cart-item-thumb">
                     {product.image.startsWith('http') || product.image.startsWith('/') ? (
                       <img src={product.image} alt={product.name} />
                     ) : (
-                      <span style={{ fontSize: '32px' }}>{product.image}</span>
+                      <span>{product.image}</span>
                     )}
                   </div>
-
-                  {/* Product Details */}
                   <div className="cart-item-details-col">
                     <h3 className="cart-item-title">{product.name}</h3>
                     <span className="cart-item-unit">{product.weight}</span>
@@ -247,23 +198,13 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
                       )}
                     </div>
                   </div>
-
-                  {/* Quantity Stepper Control (SS 5) */}
                   <div className="cart-item-stepper-wrapper">
                     <div className="ss5-qty-stepper">
-                      <button 
-                        type="button"
-                        onClick={() => removeFromCart(product.id)}
-                        aria-label="Decrease quantity"
-                      >
+                      <button type="button" onClick={() => removeFromCart(product.id)} aria-label="Decrease quantity">
                         <Minus size={13} strokeWidth={3} />
                       </button>
                       <span className="stepper-val">{qty}</span>
-                      <button 
-                        type="button"
-                        onClick={() => addToCart(product.id)}
-                        aria-label="Increase quantity"
-                      >
+                      <button type="button" onClick={() => addToCart(product.id)} aria-label="Increase quantity">
                         <Plus size={13} strokeWidth={3} />
                       </button>
                     </div>
@@ -274,46 +215,18 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
             </div>
           </div>
 
-          {/* Coupons & Offers */}
           <div id="coupon-section" className="cart-section-box">
             <h2 className="cart-section-title">Coupons & Offers</h2>
 
-            {/* Unlocked Free Delivery Coupon Card */}
             {isFreeDelivery && (!appliedCoupon || appliedCoupon.code !== 'FREEDELIVERY') && (
-              <div style={{
-                backgroundColor: 'rgba(22, 163, 74, 0.08)',
-                border: '1px dashed #16a34a',
-                borderRadius: '12px',
-                padding: '12px 16px',
-                marginBottom: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '10px'
-              }}>
+              <div className="coupon-unlocked-card">
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#15803d', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span>🎉 FREE DELIVERY COUPON UNLOCKED!</span>
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#166534', marginTop: '2px' }}>
+                  <div className="coupon-unlocked-title">🎉 FREE DELIVERY COUPON UNLOCKED!</div>
+                  <div className="coupon-unlocked-sub">
                     Code: <strong>FREEDELIVERY</strong> (Order threshold ₹{freeDeliveryThreshold} met)
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => applyCoupon('FREEDELIVERY')}
-                  style={{
-                    backgroundColor: '#16a34a',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '6px 14px',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
+                <button type="button" onClick={() => applyCoupon('FREEDELIVERY')}>
                   Apply Coupon
                 </button>
               </div>
@@ -321,10 +234,10 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
 
             {appliedCoupon ? (
               <div className="applied-coupon-banner">
-                <div>
+                <div className="applied-coupon-banner-left">
                   <span className="coupon-code-badge">{appliedCoupon.code}</span>
-                  <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 700, marginLeft: '8px' }}>
-                    Applied! Saving ₹{appliedCoupon.value}
+                  <span className="applied-coupon-savings">
+                    Applied! Saving ₹{couponSavings}
                   </span>
                 </div>
                 <button type="button" onClick={removeCoupon} className="btn-remove-coupon">
@@ -346,19 +259,16 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
           </div>
         </div>
 
-        {/* Right Column: Bill Details (SS 6), Delivery Instructions & Address */}
         <div className="cart-right-col">
-
-          {/* Bill Details Card (SS 6) */}
           <div className="cart-section-box bill-details-box">
-            <h2 className="cart-section-title" style={{ fontSize: '18px' }}>Bill details</h2>
-            
+            <h2 className="cart-section-title">Bill details</h2>
+
             <div className="bill-detail-line">
               <div className="line-label">
                 <span className="line-icon">📄</span>
                 <span>Items total</span>
               </div>
-              <span className="line-val">₹{itemsTotal}</span>
+              <span className="line-val">₹{bill.itemsTotal}</span>
             </div>
 
             <div className="bill-detail-line">
@@ -367,7 +277,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
                 <span>Delivery charge</span>
               </div>
               <span className="line-val">
-                {deliveryCharge === 0 ? <span className="free-green-badge">FREE</span> : `₹${deliveryCharge}`}
+                {bill.deliveryCharge === 0 ? <span className="free-green-badge">FREE</span> : `₹${bill.deliveryCharge}`}
               </span>
             </div>
 
@@ -376,16 +286,22 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
                 <span className="line-icon">🛍️</span>
                 <span>Handling charge</span>
               </div>
-              <span className="line-val free-green-badge">FREE</span>
+              <span className="line-val">
+                {bill.handlingCharge === 0 ? (
+                  <span className="free-green-badge">FREE</span>
+                ) : (
+                  `₹${bill.handlingCharge}`
+                )}
+              </span>
             </div>
 
-            {discountAmount > 0 && (
+            {bill.discount > 0 && (
               <div className="bill-detail-line discount-line">
                 <div className="line-label">
                   <span className="line-icon">🎟️</span>
                   <span>Coupon Discount</span>
                 </div>
-                <span className="line-val discount-val">-₹{discountAmount}</span>
+                <span className="line-val discount-val">-₹{bill.discount}</span>
               </div>
             )}
 
@@ -393,11 +309,10 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
 
             <div className="bill-detail-line grand-total-line">
               <span className="grand-total-label">Grand total</span>
-              <span className="grand-total-val">₹{grandTotal}</span>
+              <span className="grand-total-val">₹{bill.grandTotal}</span>
             </div>
           </div>
 
-          {/* Add GSTIN Banner (SS 6) */}
           <div className="gstin-card-banner">
             <div className="gstin-icon-box">%</div>
             <div className="gstin-text-col">
@@ -407,16 +322,10 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
             <ChevronRight size={18} color="#64748b" />
           </div>
 
-          {/* Delivery Instructions (SS 6) */}
           <div className="cart-section-box">
             <h2 className="cart-section-title">Delivery instructions</h2>
             <div className="instructions-horizontal-grid">
-              {[
-                { id: 'record', label: 'Record voice', sub: 'Press here and hold', icon: Mic },
-                { id: 'door', label: 'Leave at door', sub: 'Ring bell & drop', icon: BellOff },
-                { id: 'guard', label: 'Leave with guard', sub: 'Security gate', icon: Shield },
-                { id: 'call', label: 'Avoid calling', sub: 'Silent delivery', icon: PhoneOff }
-              ].map((inst) => {
+              {INSTRUCTION_OPTIONS.map((inst) => {
                 const Icon = inst.icon;
                 const isSelected = selectedInstruction === inst.label;
                 return (
@@ -438,12 +347,9 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
             </div>
           </div>
 
-          {/* Delivering to Bar (SS 6 Bottom Sticky Style) */}
           <div className="delivering-to-bar">
             <div className="del-to-left">
-              <div className="house-icon-box">
-                🏠
-              </div>
+              <div className="house-icon-box">🏠</div>
               <div className="del-to-text">
                 <span className="del-to-title">
                   Delivering to <strong>{selectedAddress ? selectedAddress.type : 'Home'}</strong>
@@ -453,24 +359,15 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
                 </span>
               </div>
             </div>
-            <button 
-              type="button" 
-              className="btn-change-address"
-              onClick={onOpenMap}
-            >
+            <button type="button" className="btn-change-address" onClick={onOpenMap}>
               {selectedAddress ? 'Change' : 'Add Address'}
             </button>
           </div>
 
-          {/* Checkout Button Bar */}
           <div className="checkout-action-wrapper">
-            <button
-              type="button"
-              className="btn-place-whatsapp-order"
-              onClick={handleOpenPaymentGateway}
-            >
+            <button type="button" className="btn-place-whatsapp-order" onClick={handleOpenPaymentGateway}>
               <div className="checkout-btn-left">
-                <span className="pay-total-val">₹{grandTotal}</span>
+                <span className="pay-total-val">₹{bill.grandTotal}</span>
                 <span className="pay-subtitle">TOTAL TO PAY</span>
               </div>
               <div className="checkout-btn-right">
@@ -479,19 +376,17 @@ export const CartPage: React.FC<CartPageProps> = ({ onOpenMap }) => {
               </div>
             </button>
           </div>
-
         </div>
       </div>
 
-      {/* Integrated Payment Gateway Modal */}
       <PaymentModal
         isOpen={isPaymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
-        amount={grandTotal}
+        amount={bill.grandTotal}
         customerName={user?.name || 'Customer'}
         customerPhone={user?.phone || ''}
         onPaymentSuccess={handleProcessOrderPayment}
       />
     </div>
   );
-};
+}

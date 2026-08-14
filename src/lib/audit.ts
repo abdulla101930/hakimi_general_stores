@@ -1,51 +1,59 @@
-import { db, isConfigured } from '../firebase';
+import { db, isConfigured } from './firebase';
 import { collection, addDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { OWNER_PHONE_DISPLAY } from './constants';
 
 export interface AuditLogEntry {
   id: string;
   timestamp: string;
   timestampMs: number;
-  action: 'PRODUCT_ADDED' | 'PRODUCT_UPDATED' | 'PRODUCT_DELETED' | 'ORDER_STATUS_CHANGED' | 'DELIVERY_THRESHOLD_UPDATED' | 'DELIVERY_SETTINGS_UPDATED' | 'MAINTENANCE_MODE_TOGGLED' | 'OWNER_LOGIN';
+  action:
+    | 'PRODUCT_ADDED'
+    | 'PRODUCT_UPDATED'
+    | 'PRODUCT_DELETED'
+    | 'ORDER_STATUS_CHANGED'
+    | 'DELIVERY_THRESHOLD_UPDATED'
+    | 'DELIVERY_SETTINGS_UPDATED'
+    | 'MAINTENANCE_MODE_TOGGLED'
+    | 'OWNER_LOGIN';
   actor: string;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
 }
 
 const LOCAL_LOGS_KEY = 'hakimi_dev_audit_logs';
 
+const nowIso = () => new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
 export const logOwnerAction = async (
   action: AuditLogEntry['action'],
-  details: Record<string, any>,
-  actor: string = '+91 99939 49604'
+  details: Record<string, unknown>,
+  actor: string = OWNER_PHONE_DISPLAY
 ): Promise<void> => {
   const now = new Date();
   const entry: AuditLogEntry = {
     id: `log-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-    timestamp: now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+    timestamp: nowIso(),
     timestampMs: now.getTime(),
     action,
     actor,
     details
   };
 
-  // 1. Save to localStorage
   try {
     const existing = getLocalAuditLogs();
-    const updated = [entry, ...existing].slice(0, 500); // keep last 500 logs
+    const updated = [entry, ...existing].slice(0, 500);
     localStorage.setItem(LOCAL_LOGS_KEY, JSON.stringify(updated));
-  } catch (err) {
-    console.error('[DevLogger] Failed to write local audit log:', err);
+  } catch {
+    /* noop */
   }
 
-  // 2. Save to Firebase Firestore if configured
   if (isConfigured) {
     try {
       await addDoc(collection(db, 'audit_logs'), entry);
-    } catch (err) {
-      console.error('[DevLogger] Failed to push audit log to Firestore:', err);
+    } catch {
+      /* noop */
     }
   }
 
-  // Log in browser developer console for live monitoring
   console.log(`%c[DEVELOPER AUDIT LOG] %c${action}`, 'color: #3b82f6; font-weight: bold;', 'color: #10b981; font-weight: bold;', {
     actor,
     timestamp: entry.timestamp,
@@ -57,7 +65,7 @@ export const getLocalAuditLogs = (): AuditLogEntry[] => {
   try {
     const raw = localStorage.getItem(LOCAL_LOGS_KEY);
     return raw ? JSON.parse(raw) : [];
-  } catch (err) {
+  } catch {
     return [];
   }
 };
@@ -68,16 +76,19 @@ export const fetchRemoteAuditLogs = async (): Promise<AuditLogEntry[]> => {
     const q = query(collection(db, 'audit_logs'), orderBy('timestampMs', 'desc'), limit(200));
     const querySnapshot = await getDocs(q);
     const logs: AuditLogEntry[] = [];
-    querySnapshot.forEach(doc => {
+    querySnapshot.forEach((doc) => {
       logs.push(doc.data() as AuditLogEntry);
     });
     return logs.length > 0 ? logs : getLocalAuditLogs();
-  } catch (err) {
-    console.error('[DevLogger] Failed to fetch Firestore audit logs:', err);
+  } catch {
     return getLocalAuditLogs();
   }
 };
 
 export const clearLocalAuditLogs = (): void => {
-  localStorage.removeItem(LOCAL_LOGS_KEY);
+  try {
+    localStorage.removeItem(LOCAL_LOGS_KEY);
+  } catch {
+    /* noop */
+  }
 };

@@ -1,39 +1,30 @@
-import React from 'react';
 import { useApp } from '../context/AppContext';
 import { Home, ShoppingBag, Package } from 'lucide-react';
 
 interface MagicBottomNavProps {
-  onOpenPWA?: () => void;
   isModalOpen?: boolean;
 }
 
-export const MagicBottomNav: React.FC<MagicBottomNavProps> = ({ isModalOpen }) => {
+const TAB_COUNT = 3;
+
+export function MagicBottomNav({ isModalOpen }: MagicBottomNavProps) {
   const { currentView, setView, isLoginOpen, isCartOpen, cart } = useApp();
 
   const totalItems = Object.values(cart).reduce((sum, count) => sum + count, 0);
 
-  // If any modal or drawer is open, hide the bottom navbar so it never overlaps popups
   if (isLoginOpen || isCartOpen || isModalOpen) return null;
 
-  // 3 Menus only: Home, Cart, Previous Orders
   const tabs = [
-    { id: 'catalog', label: 'Home', icon: Home },
-    { id: 'cart', label: 'Cart', icon: ShoppingBag, badge: totalItems },
-    { id: 'tracking', label: 'Previous Orders', icon: Package }
+    { id: 'catalog' as const, label: 'Home', icon: Home },
+    { id: 'cart' as const, label: 'Cart', icon: ShoppingBag, badge: totalItems },
+    { id: 'tracking' as const, label: 'Previous Orders', icon: Package }
   ];
 
-  // Determine active index for sliding indicator cutout
-  const getActiveIndex = (): number => {
-    if (currentView === 'catalog') return 0;
-    if (currentView === 'cart') return 1;
-    if (currentView === 'tracking') return 2;
-    return 0;
-  };
-
-  const activeIndex = getActiveIndex();
+  const activeIndex = currentView === 'cart' ? 1 : currentView === 'tracking' ? 2 : 0;
+  const indicatorLeft = ((activeIndex + 0.5) / TAB_COUNT) * 100;
 
   const handleTabClick = (tabId: string) => {
-    setView(tabId as any);
+    setView(tabId as 'catalog' | 'cart' | 'tracking');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -44,10 +35,9 @@ export const MagicBottomNav: React.FC<MagicBottomNavProps> = ({ isModalOpen }) =
           {tabs.map((tab, idx) => {
             const Icon = tab.icon;
             const isActive = activeIndex === idx;
-
             return (
-              <li 
-                key={tab.id} 
+              <li
+                key={tab.id}
                 className={`magic-list-item ${isActive ? 'active' : ''}`}
                 onClick={() => handleTabClick(tab.id)}
               >
@@ -64,22 +54,14 @@ export const MagicBottomNav: React.FC<MagicBottomNavProps> = ({ isModalOpen }) =
             );
           })}
 
-          {/* Smooth Curved Floating Circle Indicator for 3 tabs (90px spacing) */}
-          <div 
-            className="magic-indicator"
-            style={{
-              transform: `translateX(${activeIndex * 90}px)`
-            }}
-          >
+          <div className="magic-indicator" style={{ left: `${indicatorLeft}%` }}>
             <div className="indicator-circle">
               {activeIndex === 0 && <Home size={22} color="#ffffff" strokeWidth={2.5} />}
               {activeIndex === 1 && (
-                <div style={{ position: 'relative' }}>
+                <span className="indicator-icon-wrap">
                   <ShoppingBag size={22} color="#ffffff" strokeWidth={2.5} />
-                  {totalItems > 0 && (
-                    <span className="indicator-badge">{totalItems}</span>
-                  )}
-                </div>
+                  {totalItems > 0 && <span className="indicator-badge">{totalItems}</span>}
+                </span>
               )}
               {activeIndex === 2 && <Package size={22} color="#ffffff" strokeWidth={2.5} />}
             </div>
@@ -88,4 +70,4 @@ export const MagicBottomNav: React.FC<MagicBottomNavProps> = ({ isModalOpen }) =
       </nav>
     </div>
   );
-};
+}

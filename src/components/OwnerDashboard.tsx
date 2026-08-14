@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useApp } from '../context/AppContext';
-import { FOOD_SUBDIVISIONS as FOOD_SUBS, HYGIENE_SUBDIVISIONS as HYG_SUBS } from './Catalog';
-import type { Product, Order } from '../context/AppContext';
+import { FOOD_SUBDIVISIONS as FOOD_SUBS, HYGIENE_SUBDIVISIONS as HYG_SUBS } from '../lib/constants';
+import { stopOwnerRingingAlarm } from '../lib/sound';
+import type { OrderStatus, Product } from '../types';
 import { Plus, Edit, Trash2, Package, Truck, Save, User, VolumeX, Bell } from 'lucide-react';
-import { stopOwnerRingingAlarm } from '../App';
 
-export const OwnerDashboard: React.FC = () => {
-  const { 
-    catalog, 
-    orders, 
-    updateOrderStatus, 
-    addProduct, 
-    updateProduct, 
+export function OwnerDashboard() {
+  const {
+    catalog,
+    orders,
+    updateOrderStatus,
+    addProduct,
+    updateProduct,
     deleteProduct,
     logout,
     setView,
@@ -32,7 +32,6 @@ export const OwnerDashboard: React.FC = () => {
   const [distanceRateInput, setDistanceRateInput] = useState<string>((distanceRateMultiplier ?? 10).toString());
   const [thresholdMsg, setThresholdMsg] = useState<string>('');
 
-  // Catalog Form state variables
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
@@ -48,22 +47,22 @@ export const OwnerDashboard: React.FC = () => {
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
 
-  const handleSaveThreshold = (e: React.FormEvent) => {
+  const handleSaveThreshold = (e: FormEvent) => {
     e.preventDefault();
     const val = parseFloat(thresholdInput);
     const flatVal = parseFloat(flatChargeInput);
     const distRate = parseFloat(distanceRateInput);
 
     if (isNaN(val) || val < 0) {
-      alert("Please enter a valid numeric free delivery threshold.");
+      alert('Please enter a valid numeric free delivery threshold.');
       return;
     }
     if (isNaN(flatVal) || flatVal < 0) {
-      alert("Please enter a valid flat delivery charge.");
+      alert('Please enter a valid flat delivery charge.');
       return;
     }
     if (isNaN(distRate) || distRate < 0) {
-      alert("Please enter a valid distance rate multiplier.");
+      alert('Please enter a valid distance rate multiplier.');
       return;
     }
 
@@ -74,11 +73,11 @@ export const OwnerDashboard: React.FC = () => {
       distanceRateMultiplier: distRate
     });
 
-    setThresholdMsg(`✅ Store Delivery Settings updated successfully!`);
+    setThresholdMsg('✅ Store Delivery Settings updated successfully!');
     setTimeout(() => setThresholdMsg(''), 3500);
   };
 
-  const handleCatalogFormSubmit = (e: React.FormEvent) => {
+  const handleCatalogFormSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!name || !price || !weight || !image) {
       setFormError('Please fill out all required fields.');
@@ -161,40 +160,19 @@ export const OwnerDashboard: React.FC = () => {
     setFormError('');
   };
 
-  // Get list of unique customer phones for history filtering
-  const uniqueCustomers = Array.from(new Set(orders.map(o => o.customerPhone)));
+  const uniqueCustomers = Array.from(new Set(orders.map((o) => o.customerPhone)));
 
-  // Filter orders by customer phone if selected
-  const filteredOrders = selectedCustomerPhone === 'all' 
-    ? orders 
-    : orders.filter(o => o.customerPhone === selectedCustomerPhone);
+  const filteredOrders =
+    selectedCustomerPhone === 'all' ? orders : orders.filter((o) => o.customerPhone === selectedCustomerPhone);
 
-  const availableSubdivisions = mainCategory === 'Food' 
-    ? FOOD_SUBS.filter(s => s !== 'All') 
-    : HYG_SUBS.filter(s => s !== 'All');
+  const availableSubdivisions =
+    mainCategory === 'Food' ? FOOD_SUBS.filter((s) => s !== 'All') : HYG_SUBS.filter((s) => s !== 'All');
 
   return (
     <div className="admin-container">
-      {/* Admin Title bar */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '14px 16px',
-        backgroundColor: 'var(--bg-sheet)',
-        borderBottom: '1px solid var(--border-color)'
-      }}>
+      <div className="admin-title-bar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            backgroundColor: '#eff6ff',
-            borderRadius: '8px',
-            width: '32px',
-            height: '32px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '1px solid #bfdbfe'
-          }}>
+          <div className="admin-title-icon">
             <Package size={16} color="var(--primary)" />
           </div>
           <div>
@@ -203,114 +181,58 @@ export const OwnerDashboard: React.FC = () => {
           </div>
         </div>
 
-        <button 
-          onClick={() => { logout(); setView('catalog'); }}
-          style={{
-            background: 'transparent',
-            border: '1px solid var(--border-color)',
-            borderRadius: '20px',
-            padding: '4px 12px',
-            fontSize: '11px',
-            color: 'var(--error)',
-            cursor: 'pointer',
-            fontWeight: 600
+        <button
+          onClick={() => {
+            logout();
+            setView('catalog');
           }}
+          className="admin-signout-btn"
         >
           Sign Out
         </button>
       </div>
 
-      {/* Admin Navigation Tabs */}
       <div className="admin-tabs">
-        <div 
+        <div
           className={`admin-tab ${activeTab === 'orders' ? 'active' : ''}`}
-          onClick={() => { setActiveTab('orders'); resetForm(); }}
+          onClick={() => {
+            setActiveTab('orders');
+            resetForm();
+          }}
         >
           Orders & Timelogs ({orders.length})
         </div>
-        <div 
-          className={`admin-tab ${activeTab === 'products' ? 'active' : ''}`}
-          onClick={() => setActiveTab('products')}
-        >
+        <div className={`admin-tab ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>
           Manage Catalog
         </div>
-        <div 
-          className={`admin-tab ${activeTab === 'settings' ? 'active' : ''}`}
-          onClick={() => setActiveTab('settings')}
-        >
+        <div className={`admin-tab ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
           Delivery Settings
         </div>
       </div>
 
-      {/* Main Workspace */}
       <div className="scrollable" style={{ paddingBottom: '30px' }}>
-        
-        {/* --- TAB 1: ORDERS & TIMELOGS --- */}
         {activeTab === 'orders' && (
           <div className="admin-orders-list">
-            
-            {/* Unaccepted Orders Alarm Banner */}
-            {orders.some(o => o.status === 'placed') && (
-              <div style={{
-                backgroundColor: '#fef2f2',
-                border: '2px solid #ef4444',
-                borderRadius: '12px',
-                padding: '12px 16px',
-                marginBottom: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '12px',
-                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)'
-              }}>
+            {orders.some((o) => o.status === 'placed') && (
+              <div className="admin-alarm-banner">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '50%',
-                    backgroundColor: '#ef4444',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#ffffff'
-                  }}>
+                  <div className="admin-alarm-icon">
                     <Bell size={20} />
                   </div>
                   <div>
-                    <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#991b1b', margin: 0 }}>
-                      🔔 UNACCEPTED ORDER RECEIVED!
-                    </h4>
-                    <p style={{ fontSize: '11px', color: '#b91c1c', margin: '2px 0 0' }}>
-                      Ringing alarm active. (Repeats every 5 minutes until order is accepted)
-                    </p>
+                    <h4 className="admin-alarm-title">🔔 UNACCEPTED ORDER RECEIVED!</h4>
+                    <p className="admin-alarm-sub">Ringing alarm active. (Repeats every 5 minutes until order is accepted)</p>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <button
-                    type="button"
-                    onClick={() => stopOwnerRingingAlarm()}
-                    style={{
-                      backgroundColor: '#ffffff',
-                      color: '#ef4444',
-                      border: '1px solid #fca5a5',
-                      padding: '6px 12px',
-                      borderRadius: '8px',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
+                  <button type="button" onClick={() => stopOwnerRingingAlarm()} className="admin-mute-btn">
                     <VolumeX size={14} />
                     <span>Mute Sound</span>
                   </button>
 
-                  {/* Quick Accept First Placed Order */}
                   {(() => {
-                    const unaccepted = orders.find(o => o.status === 'placed');
+                    const unaccepted = orders.find((o) => o.status === 'placed');
                     if (!unaccepted) return null;
                     return (
                       <button
@@ -319,17 +241,7 @@ export const OwnerDashboard: React.FC = () => {
                           updateOrderStatus(unaccepted.id, 'packing');
                           stopOwnerRingingAlarm();
                         }}
-                        style={{
-                          backgroundColor: '#16a34a',
-                          color: '#ffffff',
-                          border: 'none',
-                          padding: '6px 14px',
-                          borderRadius: '8px',
-                          fontSize: '11px',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)'
-                        }}
+                        className="admin-accept-btn"
                       >
                         Accept Order (#{unaccepted.id})
                       </button>
@@ -339,9 +251,8 @@ export const OwnerDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* Customer Filter Selector */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+            <div className="admin-filter-row">
+              <div className="admin-filter-label">
                 <User size={14} color="var(--primary)" />
                 <span>Filter by Customer:</span>
               </div>
@@ -352,8 +263,8 @@ export const OwnerDashboard: React.FC = () => {
                 style={{ fontSize: '11px', padding: '4px 8px' }}
               >
                 <option value="all">All Customers ({orders.length} orders)</option>
-                {uniqueCustomers.map(phone => {
-                  const custOrders = orders.filter(o => o.customerPhone === phone);
+                {uniqueCustomers.map((phone) => {
+                  const custOrders = orders.filter((o) => o.customerPhone === phone);
                   const custName = custOrders[0]?.customerName || 'Customer';
                   return (
                     <option key={phone} value={phone}>
@@ -363,34 +274,27 @@ export const OwnerDashboard: React.FC = () => {
                 })}
               </select>
             </div>
-            
+
             {filteredOrders.length === 0 ? (
-              <div style={{
-                textAlign: 'center',
-                padding: '40px 20px',
-                backgroundColor: 'var(--bg-card)',
-                borderRadius: '12px',
-                border: '1px solid var(--border-color)'
-              }}>
+              <div className="admin-empty-card">
                 <span style={{ fontSize: '32px' }}>📭</span>
                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
                   No customer orders match this filter.
                 </p>
               </div>
             ) : (
-              filteredOrders.map(order => (
+              filteredOrders.map((order) => (
                 <div key={order.id} className="admin-order-card" style={{ borderLeft: '4px solid var(--primary)' }}>
                   <div className="admin-order-header">
                     <div>
                       <span className="admin-order-id">{order.id}</span>
                       <div className="admin-order-date">{order.date}</div>
                     </div>
-                    
-                    {/* Status Dropdown */}
+
                     <select
                       className="status-dropdown"
                       value={order.status}
-                      onChange={(e) => updateOrderStatus(order.id, e.target.value as Order['status'])}
+                      onChange={(e) => updateOrderStatus(order.id, e.target.value as OrderStatus)}
                     >
                       <option value="placed">Placed</option>
                       <option value="packing">Packing</option>
@@ -399,7 +303,6 @@ export const OwnerDashboard: React.FC = () => {
                     </select>
                   </div>
 
-                  {/* Customer Info & Coordinates */}
                   <div style={{ fontSize: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
                     <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
                       👤 {order.customerName} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({order.customerPhone})</span>
@@ -413,48 +316,30 @@ export const OwnerDashboard: React.FC = () => {
                       </div>
                     )}
                     {order.instructions && (
-                      <div style={{ 
-                        marginTop: '4px', 
-                        fontSize: '11px', 
-                        backgroundColor: '#eff6ff', 
-                        padding: '4px 8px', 
-                        borderRadius: '4px',
-                        border: '1px solid #bfdbfe',
-                        color: '#1e3a8a'
-                      }}>
+                      <div className="admin-instructions-box">
                         💬 <strong>Instructions:</strong> "{order.instructions}"
                       </div>
                     )}
                   </div>
 
-                  {/* Timelogs Details */}
-                  <div style={{
-                    backgroundColor: 'var(--bg-main)',
-                    padding: '6px 10px',
-                    borderRadius: 'var(--border-radius-sm)',
-                    margin: '6px 0',
-                    fontSize: '10px',
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: '4px'
-                  }}>
+                  <div className="admin-timelog-grid">
                     <div>⏱️ Placed: <strong>{order.timelog?.placedAt || 'Recorded'}</strong></div>
                     <div>📦 Packing: <strong>{order.timelog?.packingAt || '--'}</strong></div>
                     <div>🛵 Out: <strong>{order.timelog?.outForDeliveryAt || '--'}</strong></div>
                     <div>🎁 Delivered: <strong>{order.timelog?.deliveredAt || '--'}</strong></div>
                   </div>
 
-                  {/* Order Items */}
                   <div className="admin-order-items">
-                    {order.items.map(item => (
+                    {order.items.map((item) => (
                       <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
-                        <span>• {item.name} ({item.weight}) x {item.quantity}</span>
+                        <span>
+                          • {item.name} ({item.weight}) x {item.quantity}
+                        </span>
                         <span>₹{item.price * item.quantity}</span>
                       </div>
                     ))}
                   </div>
 
-                  {/* Billing Breakdown */}
                   <div className="admin-order-footer" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '8px' }}>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                       Bill: Items ₹{order.bill.itemsTotal} | Fee ₹{order.bill.handlingCharge} | Del ₹{order.bill.deliveryCharge} | Disc ₹{order.bill.discount}
@@ -467,30 +352,23 @@ export const OwnerDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* --- TAB 2: MANAGE CATALOG --- */}
         {activeTab === 'products' && (
           <div className="admin-products-list">
             <h3 className="admin-form-title" style={{ padding: '0 4px' }}>
               {editingId ? 'Edit Product details' : 'Add New Product to Catalog'}
             </h3>
 
-            {formError && (
-              <div style={{ backgroundColor: 'var(--error-bg)', color: 'var(--error)', border: '1px solid var(--error)', padding: '10px', borderRadius: '8px', fontSize: '11px', fontWeight: 500 }}>
-                {formError}
-              </div>
-            )}
-            
-            {formSuccess && (
-              <div style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)', border: '1px solid var(--success)', padding: '10px', borderRadius: '8px', fontSize: '11px', fontWeight: 500 }}>
-                {formSuccess}
-              </div>
-            )}
+            {formError && <div className="admin-form-alert admin-form-alert-error">{formError}</div>}
+            {formSuccess && <div className="admin-form-alert admin-form-alert-success">{formSuccess}</div>}
 
-            {/* Catalog Editing Form */}
-            <form onSubmit={handleCatalogFormSubmit} className="admin-form" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
+            <form
+              onSubmit={handleCatalogFormSubmit}
+              className="admin-form"
+              style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px' }}
+            >
               <div className="input-group">
                 <label className="input-label">Product Name *</label>
-                <input 
+                <input
                   type="text"
                   className="form-input"
                   placeholder="e.g. Fresh Red Tomatoes"
@@ -503,7 +381,7 @@ export const OwnerDashboard: React.FC = () => {
               <div className="form-row-2">
                 <div className="input-group">
                   <label className="input-label">Main Category *</label>
-                  <select 
+                  <select
                     className="form-input"
                     value={mainCategory}
                     onChange={(e) => {
@@ -520,13 +398,11 @@ export const OwnerDashboard: React.FC = () => {
 
                 <div className="input-group">
                   <label className="input-label">Subcategory *</label>
-                  <select 
-                    className="form-input"
-                    value={subCategory}
-                    onChange={(e) => setSubCategory(e.target.value)}
-                  >
-                    {availableSubdivisions.map(sub => (
-                      <option key={sub} value={sub}>{sub}</option>
+                  <select className="form-input" value={subCategory} onChange={(e) => setSubCategory(e.target.value)}>
+                    {availableSubdivisions.map((sub) => (
+                      <option key={sub} value={sub}>
+                        {sub}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -538,7 +414,7 @@ export const OwnerDashboard: React.FC = () => {
                   <select
                     className="form-input"
                     value={dietaryType}
-                    onChange={(e) => setDietaryType(e.target.value as any)}
+                    onChange={(e) => setDietaryType(e.target.value as 'veg' | 'non-veg' | 'none')}
                   >
                     <option value="veg">🟢 Veg</option>
                     <option value="non-veg">🔴 Non-Veg</option>
@@ -548,7 +424,7 @@ export const OwnerDashboard: React.FC = () => {
 
                 <div className="input-group">
                   <label className="input-label">Weight/Volume *</label>
-                  <input 
+                  <input
                     type="text"
                     className="form-input"
                     placeholder="e.g. 500 g, 1 L, 6 pcs"
@@ -562,7 +438,7 @@ export const OwnerDashboard: React.FC = () => {
               <div className="form-row-2">
                 <div className="input-group">
                   <label className="input-label">Selling Price (₹) *</label>
-                  <input 
+                  <input
                     type="number"
                     className="form-input"
                     placeholder="e.g. 45"
@@ -574,7 +450,7 @@ export const OwnerDashboard: React.FC = () => {
 
                 <div className="input-group">
                   <label className="input-label">Original Price (₹)</label>
-                  <input 
+                  <input
                     type="number"
                     className="form-input"
                     placeholder="Optional (Strikeout price)"
@@ -587,7 +463,7 @@ export const OwnerDashboard: React.FC = () => {
               <div className="form-row-2">
                 <div className="input-group">
                   <label className="input-label">Emoji / Pic URL *</label>
-                  <input 
+                  <input
                     type="text"
                     className="form-input"
                     placeholder="Emoji (e.g. 🍎) or URL"
@@ -599,7 +475,7 @@ export const OwnerDashboard: React.FC = () => {
 
                 <div className="input-group">
                   <label className="input-label">Handling Fee (₹)</label>
-                  <input 
+                  <input
                     type="number"
                     className="form-input"
                     placeholder="Optional (0 if empty)"
@@ -611,8 +487,8 @@ export const OwnerDashboard: React.FC = () => {
 
               <div className="input-group" style={{ margin: '4px 0' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '12px' }}>
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={inStock}
                     onChange={(e) => setInStock(e.target.checked)}
                     style={{ width: '16px', height: '16px', accentColor: 'var(--primary)' }}
@@ -623,9 +499,9 @@ export const OwnerDashboard: React.FC = () => {
 
               <div style={{ display: 'flex', gap: 8, marginTop: '8px' }}>
                 {editingId && (
-                  <button 
-                    type="button" 
-                    className="btn-primary" 
+                  <button
+                    type="button"
+                    className="btn-primary"
                     onClick={resetForm}
                     style={{ flex: 1, backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
                   >
@@ -639,43 +515,45 @@ export const OwnerDashboard: React.FC = () => {
               </div>
             </form>
 
-            {/* Catalog List */}
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '10px' }}>
-              <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '12px', padding: '0 4px' }}>
-                Inventory ({catalog.length} products)
-              </h3>
-              
+              <h3 className="admin-inventory-title">Inventory ({catalog.length} products)</h3>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {catalog.map(product => (
+                {catalog.map((product) => (
                   <div key={product.id} className="admin-product-item">
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <div className="admin-product-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+                      <div
+                        className="admin-product-img"
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}
+                      >
                         {product.image.startsWith('http') ? (
                           <img src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         ) : (
                           product.image
                         )}
                       </div>
-                      
+
                       <div className="admin-product-info">
                         <div className="admin-product-name">{product.name}</div>
                         <div className="admin-product-meta">
-                          {product.mainCategory || 'Food'} ➔ {product.subCategory} | ₹{product.price} {product.originalPrice && <s style={{ fontSize: '9px' }}>₹{product.originalPrice}</s>} | {product.inStock ? <span style={{ color: 'var(--success)' }}>In Stock</span> : <span style={{ color: 'var(--error)' }}>Out</span>}
+                          {product.mainCategory || 'Food'} ➔ {product.subCategory} | ₹{product.price}{' '}
+                          {product.originalPrice && <s style={{ fontSize: '9px' }}>₹{product.originalPrice}</s>} |{' '}
+                          {product.inStock ? (
+                            <span style={{ color: 'var(--success)' }}>In Stock</span>
+                          ) : (
+                            <span style={{ color: 'var(--error)' }}>Out</span>
+                          )}
                         </div>
                       </div>
                     </div>
 
                     <div className="admin-product-actions">
-                      <button 
-                        className="btn-icon-action" 
-                        onClick={() => loadProductToEdit(product)}
-                        title="Edit Item"
-                      >
+                      <button className="btn-icon-action" onClick={() => loadProductToEdit(product)} title="Edit Item">
                         <Edit size={14} />
                       </button>
-                      
-                      <button 
-                        className="btn-icon-action delete" 
+
+                      <button
+                        className="btn-icon-action delete"
                         onClick={() => {
                           if (confirm(`Delete ${product.name} from catalog?`)) {
                             deleteProduct(product.id);
@@ -693,24 +571,21 @@ export const OwnerDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* --- TAB 3: DELIVERY & STORE MAINTENANCE SETTINGS --- */}
         {activeTab === 'settings' && (
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* Global Store Maintenance Mode Toggle */}
-            <div style={{
-              backgroundColor: isMaintenanceMode ? '#fff1f2' : 'var(--bg-card)',
-              border: isMaintenanceMode ? '2px solid #e11d48' : '1px solid var(--border-color)',
-              borderRadius: 'var(--border-radius-md)',
-              padding: '16px'
-            }}>
+            <div
+              className="admin-maint-card"
+              style={{
+                backgroundColor: isMaintenanceMode ? '#fff1f2' : 'var(--bg-card)',
+                border: isMaintenanceMode ? '2px solid #e11d48' : '1px solid var(--border-color)'
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                 <div>
                   <h3 style={{ fontSize: '15px', fontWeight: 800, color: isMaintenanceMode ? '#be123c' : 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span>🚨 Global Store Maintenance Mode</span>
                     {isMaintenanceMode && (
-                      <span style={{ fontSize: '10px', backgroundColor: '#e11d48', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontWeight: 800 }}>
-                        OFFLINE (ACTIVE)
-                      </span>
+                      <span className="admin-offline-badge">OFFLINE (ACTIVE)</span>
                     )}
                   </h3>
                   <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', margin: 0 }}>
@@ -739,12 +614,7 @@ export const OwnerDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div style={{
-              backgroundColor: 'var(--bg-card)',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--border-radius-md)',
-              padding: '16px'
-            }}>
+            <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius-md)', padding: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '12px' }}>
                 <Truck size={20} color="var(--primary)" />
                 <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
@@ -756,19 +626,7 @@ export const OwnerDashboard: React.FC = () => {
                 Set the order price limit after which the handling charge and convenience fee will be waived for customers (e.g. ₹200 or ₹100).
               </p>
 
-              {thresholdMsg && (
-                <div style={{
-                  backgroundColor: 'var(--success-bg)',
-                  color: 'var(--success)',
-                  padding: '8px 12px',
-                  borderRadius: 'var(--border-radius-sm)',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  marginBottom: '12px'
-                }}>
-                  {thresholdMsg}
-                </div>
-              )}
+              {thresholdMsg && <div className="admin-threshold-msg">{thresholdMsg}</div>}
 
               <form onSubmit={handleSaveThreshold} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div className="input-group">
@@ -837,8 +695,7 @@ export const OwnerDashboard: React.FC = () => {
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
-};
+}

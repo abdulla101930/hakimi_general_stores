@@ -1,30 +1,21 @@
-import React from 'react';
 import { useApp } from '../context/AppContext';
+import { calculateDeliveryMetrics } from '../lib/geo';
 import { User, Download, ChevronDown, MapPin } from 'lucide-react';
-import { calculateDeliveryMetrics } from '../utils/geoUtils';
 
 interface NavbarProps {
   onOpenPWA?: () => void;
   onOpenMap?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({
-  onOpenPWA,
-  onOpenMap
-}) => {
+export function Navbar({ onOpenPWA, onOpenMap }: NavbarProps) {
   const { user, role, logout, setLoginOpen, currentView, setView, selectedAddress } = useApp();
 
-  // Dynamic distance and estimated delivery time calculation relative to shop in Chandni Chowk, Ratlam
-  const { timeText, distanceText } = calculateDeliveryMetrics(
-    selectedAddress?.gps,
-    selectedAddress?.details
-  );
+  const { timeText, distanceText } = calculateDeliveryMetrics(selectedAddress?.gps, selectedAddress?.details);
 
   return (
     <header className="blinkit-header">
       <div className="blinkit-top-header-banner">
         <div className="blinkit-header-row">
-          {/* Brand Name & Dynamic Delivery Time Header */}
           <div className="blinkit-brand-title-group">
             <span className="blinkit-brand-sub">Hakimi General Store in</span>
             <h1 className="blinkit-header-main-title">
@@ -34,37 +25,34 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {distanceText}
               </span>
             </h1>
-            <div 
+            <div
               className="blinkit-location-subtitle"
               onClick={onOpenMap}
               title="Click to select delivery location"
+              role="button"
             >
-              <span style={{ color: '#0f172a', fontWeight: 800 }}>
+              <span className="blinkit-location-type">
                 {selectedAddress ? `${selectedAddress.type} - ` : 'HOME - '}
               </span>
-              <span style={{ color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
+              <span className="blinkit-location-text">
                 {selectedAddress ? selectedAddress.details : '93 Shirien Manzil near HDFC Bank, Ratlam'}
               </span>
-              <ChevronDown size={14} color="#64748b" />
+              <ChevronDown size={14} color="#64748b" className="blinkit-location-chevron" />
             </div>
           </div>
 
-          {/* Right Action Icons: App & User Profile (Wallet removed per request) */}
           <div className="blinkit-header-user-actions">
-            {/* Download PWA App */}
-            <button 
+            <button
               type="button"
               className="blinkit-wallet-badge"
               onClick={onOpenPWA}
-              style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', cursor: 'pointer' }}
               title="Download App"
             >
               <Download size={12} />
               <span>App</span>
             </button>
 
-            {/* Account / User Avatar */}
-            <button 
+            <button
               type="button"
               className="blinkit-user-avatar-btn"
               onClick={() => {
@@ -87,4 +75,4 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
     </header>
   );
-};
+}

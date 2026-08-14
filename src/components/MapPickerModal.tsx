@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import { useState, type MouseEvent } from 'react';
 import { X, MapPin, Navigation, Check } from 'lucide-react';
-import type { Address } from '../context/AppContext';
+import { DEFAULT_USER_LOCATION } from '../lib/geo';
+import type { Address } from '../types';
 
 interface MapPickerModalProps {
   isOpen: boolean;
@@ -8,16 +9,12 @@ interface MapPickerModalProps {
   onSelectAddress: (addr: Address) => void;
 }
 
-export const MapPickerModal: React.FC<MapPickerModalProps> = ({
-  isOpen,
-  onClose,
-  onSelectAddress
-}) => {
+export function MapPickerModal({ isOpen, onClose, onSelectAddress }: MapPickerModalProps) {
   const [addressType, setAddressType] = useState('Home');
   const [streetDetails, setStreetDetails] = useState('');
   const [pinCoords, setPinCoords] = useState<{ lat: number; lng: number }>({
-    lat: 18.5204, // Default Pune/Mumbai coordinates
-    lng: 73.8567
+    lat: DEFAULT_USER_LOCATION.lat,
+    lng: DEFAULT_USER_LOCATION.lng
   });
   const [isLocating, setIsLocating] = useState(false);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -26,7 +23,7 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser.");
+      alert('Geolocation is not supported by your browser.');
       return;
     }
     setIsLocating(true);
@@ -43,31 +40,30 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
       (error) => {
         console.error(error);
         setIsLocating(false);
-        alert("Unable to retrieve GPS position. You can move the map pin manually.");
+        alert('Unable to retrieve GPS position. You can move the map pin manually.');
       },
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
   };
 
-  const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMapClick = (e: MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
-    
-    // Simulate latitude and longitude micro offsets based on map click
+
     const deltaLat = ((rect.height / 2 - clickY) / rect.height) * 0.02;
     const deltaLng = ((clickX - rect.width / 2) / rect.width) * 0.02;
-    
+
     const newLat = Number((pinCoords.lat + deltaLat).toFixed(5));
     const newLng = Number((pinCoords.lng + deltaLng).toFixed(5));
-    
+
     setPinCoords({ lat: newLat, lng: newLng });
     setDragOffset({ x: clickX - rect.width / 2, y: clickY - rect.height / 2 });
   };
 
   const handleConfirmLocation = () => {
     if (!streetDetails.trim()) {
-      alert("Please enter street address / house details.");
+      alert('Please enter street address / house details.');
       return;
     }
 
@@ -84,7 +80,6 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
     <>
       <div className="drawer-backdrop active" style={{ zIndex: 9990 }} onClick={onClose} />
       <div className="drawer-content active" style={{ zIndex: 9995, maxHeight: '90%', height: '85%' }}>
-        {/* Header */}
         <div className="drawer-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <MapPin size={20} color="var(--primary)" />
@@ -95,11 +90,10 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
           </button>
         </div>
 
-        {/* Map Workspace */}
         <div className="scrollable" style={{ padding: '12px' }}>
-          {/* Interactive Map Visual Simulator */}
           <div
             onClick={handleMapClick}
+            className="map-picker-canvas"
             style={{
               position: 'relative',
               width: '100%',
@@ -121,64 +115,59 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
               boxShadow: 'var(--shadow-md)'
             }}
           >
-            {/* Map Roads / Landmarks simulation */}
-            <div style={{
-              position: 'absolute',
-              top: '40%',
-              left: 0,
-              right: 0,
-              height: '18px',
-              backgroundColor: '#ffffff',
-              borderTop: '2px solid #cbd5e1',
-              borderBottom: '2px solid #cbd5e1',
-              transform: 'rotate(-5deg)',
-              pointerEvents: 'none'
-            }} />
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              left: '45%',
-              width: '18px',
-              backgroundColor: '#ffffff',
-              borderLeft: '2px solid #cbd5e1',
-              borderRight: '2px solid #cbd5e1',
-              transform: 'rotate(15deg)',
-              pointerEvents: 'none'
-            }} />
+            <div
+              style={{
+                position: 'absolute',
+                top: '40%',
+                left: 0,
+                right: 0,
+                height: '18px',
+                backgroundColor: '#ffffff',
+                borderTop: '2px solid #cbd5e1',
+                borderBottom: '2px solid #cbd5e1',
+                transform: 'rotate(-5deg)',
+                pointerEvents: 'none'
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: '45%',
+                width: '18px',
+                backgroundColor: '#ffffff',
+                borderLeft: '2px solid #cbd5e1',
+                borderRight: '2px solid #cbd5e1',
+                transform: 'rotate(15deg)',
+                pointerEvents: 'none'
+              }}
+            />
 
-            {/* Pinned Marker */}
-            <div style={{
-              position: 'absolute',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-              transform: `translate(${dragOffset.x}px, ${dragOffset.y - 20}px)`,
-              pointerEvents: 'none',
-              zIndex: 10
-            }}>
-              <div style={{
-                backgroundColor: 'var(--primary)',
-                color: 'white',
-                padding: '3px 8px',
-                borderRadius: '12px',
-                fontSize: '10px',
-                fontWeight: 700,
-                boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
-                whiteSpace: 'nowrap',
-                marginBottom: '2px'
-              }}>
-                📍 Drop Pin Here
-              </div>
+            <div
+              style={{
+                position: 'absolute',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                transform: `translate(${dragOffset.x}px, ${dragOffset.y - 20}px)`,
+                pointerEvents: 'none',
+                zIndex: 10
+              }}
+            >
+              <div className="map-pin-label">📍 Drop Pin Here</div>
               <MapPin size={36} color="#dc2626" fill="#ef4444" />
             </div>
 
-            {/* Floating GPS button inside Map */}
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); handleGetCurrentLocation(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleGetCurrentLocation();
+              }}
               disabled={isLocating}
+              className="map-locate-btn"
               style={{
                 position: 'absolute',
                 bottom: '12px',
@@ -207,34 +196,24 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
             💡 Tap anywhere on map to position the delivery pin accurately.
           </p>
 
-          {/* Coordinate details card */}
-          <div style={{
-            backgroundColor: '#eff6ff',
-            border: '1px solid #bfdbfe',
-            borderRadius: 'var(--border-radius-sm)',
-            padding: '8px 12px',
-            marginTop: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            <span style={{ fontSize: '11px', color: '#1e3a8a', fontWeight: 600 }}>
-              Pinned Coordinates:
-            </span>
+          <div className="map-coords-card">
+            <span style={{ fontSize: '11px', color: '#1e3a8a', fontWeight: 600 }}>Pinned Coordinates:</span>
             <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--primary)', fontWeight: 700 }}>
               {pinCoords.lat.toFixed(5)}, {pinCoords.lng.toFixed(5)}
             </span>
           </div>
 
-          {/* Address Type Selector */}
           <div style={{ marginTop: '12px' }}>
-            <label className="input-label" style={{ marginBottom: '6px', display: 'block' }}>Save Address As</label>
+            <label className="input-label" style={{ marginBottom: '6px', display: 'block' }}>
+              Save Address As
+            </label>
             <div style={{ display: 'flex', gap: 8 }}>
-              {['Home', 'Work', 'Other'].map(t => (
+              {['Home', 'Work', 'Other'].map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => setAddressType(t)}
+                  className="map-address-type-btn"
                   style={{
                     flex: 1,
                     padding: '8px',
@@ -254,7 +233,6 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
             </div>
           </div>
 
-          {/* House / Flat details input */}
           <div className="input-group" style={{ marginTop: '12px' }}>
             <label className="input-label">House / Flat / Building / Street Details *</label>
             <input
@@ -266,7 +244,6 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
             />
           </div>
 
-          {/* Submit CTA */}
           <button
             type="button"
             className="btn-primary"
@@ -280,4 +257,4 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
       </div>
     </>
   );
-};
+}
