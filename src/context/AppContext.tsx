@@ -1,9 +1,10 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { db, isConfigured } from '../lib/firebase';
 import { doc, collection, setDoc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { logOwnerAction } from '../lib/audit';
 import { safeJSONParse, safeJSONStringify } from '../lib/storage';
 import { DEFAULT_PRODUCTS, isOwnerPhone } from '../lib/constants';
+import { mergeCatalogByVariant } from '../lib/catalog';
 import { computeBill, computeDeliveryCharge, type BillResult } from '../lib/billing';
 import {
   cartKeyOf,
@@ -29,6 +30,7 @@ interface AppContextType {
   user: User | null;
   role: Role;
   catalog: Product[];
+  customerCatalog: Product[];
   cart: Record<string, number>;
   orders: Order[];
   activeOrder: Order | null;
@@ -107,6 +109,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const u = readUser();
     return u ? safeJSONParse<Record<string, number>>(`hakimi_cart_${u.phone}`, {}) : {};
   });
+
+  const customerCatalog = useMemo(() => mergeCatalogByVariant(catalog), [catalog]);
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeOrder, setActiveOrder] = useState<Order | null>(() => {
@@ -379,14 +383,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const addToCart = (productId: string, weight?: string) => {
-    const product = catalog.find((p) => p.id === productId);
+    const product = customerCatalog.find((p) => p.id === productId);
     const w = weight ?? product?.weight;
     const key = w ? cartKeyOf(productId, w) : productId;
     setCart((prev) => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
   };
 
   const removeFromCart = (productId: string, weight?: string) => {
-    const product = catalog.find((p) => p.id === productId);
+    const product = customerCatalog.find((p) => p.id === productId);
     const w = weight ?? product?.weight;
     const key = w ? cartKeyOf(productId, w) : productId;
     setCart((prev) => {
@@ -410,7 +414,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => setCart({});
 
-  const resolveCartLines = () => buildCartLines(cart, catalog);
+  const resolveCartLines = () => buildCartLines(cart, customerCatalog);
 
   const applyCoupon = (code: string) => {
     const uppercaseCode = code.trim().toUpperCase();
@@ -435,7 +439,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user) throw new Error('Must be logged in to place an order.');
     if (!selectedAddress) throw new Error('Please select or add a delivery address.');
 
-    const cartLines = buildCartLines(cart, catalog);
+    const cartLines = buildCartLines(cart, customerCatalog);
     const orderItems: Order['items'] = cartLines.map((line) => ({
       id: line.product.id,
       name: line.product.name,
@@ -575,6 +579,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         user,
         role,
         catalog,
+        customerCatalog,
         cart,
         orders,
         activeOrder,

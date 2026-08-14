@@ -5,7 +5,7 @@ import { ProductCard } from './ProductCard';
 import { Search, ChevronRight, X } from 'lucide-react';
 
 export function Catalog() {
-  const { catalog } = useApp();
+  const { customerCatalog: catalog } = useApp();
   const [selectedMainCat, setSelectedMainCat] = useState<'Food' | 'Hygiene'>('Food');
   const [selectedSubCat, setSelectedSubCat] = useState<string>('All');
   const [dietaryFilter, setDietaryFilter] = useState<'all' | 'veg' | 'non-veg'>('all');
