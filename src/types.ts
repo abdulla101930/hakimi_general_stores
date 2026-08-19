@@ -79,6 +79,7 @@ export interface User {
   phone: string;
   name: string;
   addresses: Address[];
+  password?: string;
 }
 
 export type Role = 'customer' | 'owner';

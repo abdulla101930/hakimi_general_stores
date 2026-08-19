@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { db, isConfigured } from '../lib/firebase';
 import { doc, collection, setDoc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { logOwnerAction } from '../lib/audit';
-import { safeJSONParse, safeJSONStringify } from '../lib/storage';
+import { safeJSONParse, safeJSONStringify, saveRegisteredUser } from '../lib/storage';
 import { DEFAULT_PRODUCTS, isOwnerPhone } from '../lib/constants';
 import { mergeCatalogByVariant } from '../lib/catalog';
 import { computeBill, computeDeliveryCharge, type BillResult } from '../lib/billing';
@@ -49,7 +49,7 @@ interface AppContextType {
   getDeliveryCharge: (itemsTotal: number, address?: Address | null) => number;
   isMaintenanceMode: boolean;
   toggleMaintenanceMode: (enabled?: boolean) => void;
-  login: (phone: string, name: string, addresses: Address[]) => void;
+  login: (phone: string, name: string, addresses: Address[], password?: string) => void;
   logout: () => void;
   setLoginOpen: (open: boolean) => void;
   setView: (view: View) => void;
@@ -337,9 +337,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (user) safeJSONStringify(`hakimi_cart_${user.phone}`, cart);
   }, [cart, user]);
 
-  const login = (phone: string, name: string, addresses: Address[]) => {
-    const newUser: User = { phone: phone.trim(), name: name.trim(), addresses };
+  const login = (phone: string, name: string, addresses: Address[], password?: string) => {
+    const newUser: User = { phone: phone.trim(), name: name.trim(), addresses, password };
     safeJSONStringify('hakimi_user', newUser);
+    saveRegisteredUser({ phone: newUser.phone, name: newUser.name, addresses: newUser.addresses, password: newUser.password });
+
     const persistedCart = safeJSONParse<Record<string, number>>(`hakimi_cart_${newUser.phone}`, {});
     setCart((prev) => {
       const merged: Record<string, number> = { ...persistedCart };
@@ -366,6 +368,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!prev) return prev;
       const updatedUser = { ...prev, addresses: [...(prev.addresses || []), addr] };
       safeJSONStringify('hakimi_user', updatedUser);
+      saveRegisteredUser({ phone: updatedUser.phone, name: updatedUser.name, addresses: updatedUser.addresses, password: updatedUser.password });
       return updatedUser;
     });
     setSelectedAddressState(addr);

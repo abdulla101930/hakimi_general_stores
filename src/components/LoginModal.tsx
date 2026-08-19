@@ -1,43 +1,97 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useApp } from '../context/AppContext';
 import { isOwnerPhone, OWNER_PHONE_DISPLAY } from '../lib/constants';
-import { sendOtpViaWhatsApp } from '../lib/whatsapp';
+import { findRegisteredUser } from '../lib/storage';
 import type { Address } from '../types';
-import { X, Send, ShieldAlert, MapPin, CheckCircle, ArrowLeft, RefreshCw } from 'lucide-react';
+import {
+  X,
+  Phone,
+  Lock,
+  User as UserIcon,
+  MapPin,
+  CheckCircle2,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  Plus,
+  Sparkles,
+  ArrowRight,
+  Home,
+  Briefcase,
+  Building2
+} from 'lucide-react';
 
 export function LoginModal() {
   const { isLoginOpen, setLoginOpen, login } = useApp();
+
+  // Mode: 'signin' | 'register'
+  const [mode, setMode] = useState<'signin' | 'register'>('signin');
+
+  // Input states
   const [phoneNumber, setPhoneNumber] = useState('');
   const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
+  // Auto-detection state flags
+  const [isKnownUser, setIsKnownUser] = useState(false);
+  const [detectedName, setDetectedName] = useState('');
+
+  // Address states for location setup
   const [addressesList, setAddressesList] = useState<Address[]>([]);
   const [currentAddressType, setCurrentAddressType] = useState<string>('Home');
   const [currentAddressDetails, setCurrentAddressDetails] = useState('');
   const [currentGpsCoords, setCurrentGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
 
-  const [step, setStep] = useState<'info' | 'otp'>('info');
-  const [otpCode, setOtpCode] = useState('');
-  const [generatedOtp, setGeneratedOtp] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-  const [resendTimer, setResendTimer] = useState(30);
-  const [showNotification, setShowNotification] = useState(true);
-
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-    if (step === 'otp' && resendTimer > 0) {
-      interval = setInterval(() => {
-        setResendTimer((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [step, resendTimer]);
-
-  if (!isLoginOpen) return null;
+  const [successMsg, setSuccessMsg] = useState('');
 
   const isOwner = isOwnerPhone(phoneNumber);
+
+  // Real-time phone auto-detection logic
+  useEffect(() => {
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    if (cleanPhone.length >= 10) {
+      if (isOwnerPhone(cleanPhone)) {
+        setIsKnownUser(true);
+        setDetectedName('Merchant Owner');
+        setMode('signin');
+        setErrorMsg('');
+        return;
+      }
+
+      const existingAccount = findRegisteredUser(cleanPhone);
+      if (existingAccount) {
+        setIsKnownUser(true);
+        setDetectedName(existingAccount.name);
+        setName(existingAccount.name);
+        if (existingAccount.addresses && existingAccount.addresses.length > 0) {
+          setAddressesList(existingAccount.addresses);
+        }
+        if (existingAccount.password) {
+          setPassword(existingAccount.password);
+        }
+        // Smoothly auto-switch to Sign In mode if existing user
+        setMode('signin');
+        setErrorMsg('');
+        setSuccessMsg(`Welcome back, ${existingAccount.name}! Enter your password to sign in.`);
+      } else {
+        setIsKnownUser(false);
+        setDetectedName('');
+        // New user detected -> default to register if empty name
+        if (!name.trim()) {
+          setMode('register');
+        }
+      }
+    } else {
+      setIsKnownUser(false);
+      setDetectedName('');
+      setSuccessMsg('');
+    }
+  }, [phoneNumber, name]);
+
+  if (!isLoginOpen) return null;
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
@@ -51,10 +105,10 @@ export function LoginModal() {
         const lng = position.coords.longitude;
         setCurrentGpsCoords({ lat, lng });
         setIsLocating(false);
-        const coordsText = `📍 Pinned GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        const coordsText = `📍 GPS Pin: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
         if (!currentAddressDetails.trim()) {
           setCurrentAddressDetails(coordsText);
-        } else if (!currentAddressDetails.includes('GPS:')) {
+        } else if (!currentAddressDetails.includes('GPS Pin:')) {
           setCurrentAddressDetails((prev) => `${prev} (${coordsText})`);
         }
       },
@@ -63,18 +117,18 @@ export function LoginModal() {
         setIsLocating(false);
         alert('Unable to pinpoint GPS. Please enter your address details manually.');
       },
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
     );
   };
 
   const handleAddAddress = () => {
     if (!currentAddressDetails.trim()) {
-      alert('Please type your address details first.');
+      alert('Please type your street/house address details first.');
       return;
     }
     const exists = addressesList.some((a) => a.type === currentAddressType);
     if (exists) {
-      alert(`An address with label "${currentAddressType}" is already added.`);
+      alert(`An address labeled "${currentAddressType}" is already added.`);
       return;
     }
     const newAddr: Address = {
@@ -103,82 +157,77 @@ export function LoginModal() {
     return finalAddresses;
   };
 
-  const handleSendOtp = (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    setErrorMsg('');
 
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
     if (!cleanPhone || cleanPhone.length < 10) {
       setErrorMsg('Please enter a valid 10-digit mobile number.');
       return;
     }
 
-    const finalAddresses = getCollectedAddresses();
-
-    if (!isOwner) {
-      if (!name.trim()) {
-        setErrorMsg('Please enter your full name.');
-        return;
-      }
-      if (finalAddresses.length === 0) {
-        setErrorMsg('Please enter your delivery address.');
-        return;
-      }
-    }
-
-    setErrorMsg('');
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOtp(code);
-    setResendTimer(30);
-    setShowNotification(true);
-    setStep('otp');
-
-    window.open(sendOtpViaWhatsApp(cleanPhone, code), '_blank');
-  };
-
-  const handleResendOtp = () => {
-    if (resendTimer > 0) return;
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
-    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOtp(newCode);
-    setResendTimer(30);
-    setShowNotification(true);
-    setErrorMsg('');
-
-    window.open(sendOtpViaWhatsApp(cleanPhone, newCode, true), '_blank');
-  };
-
-  const handleVerifyOtp = (e: FormEvent) => {
-    e.preventDefault();
-
-    if (otpCode !== generatedOtp && otpCode !== '123456') {
-      setErrorMsg('Invalid 6-digit verification code. Please try again.');
+    if (!password || password.trim().length < 4) {
+      setErrorMsg('Please enter a valid password (at least 4 characters).');
       return;
     }
 
-    setErrorMsg('');
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
     const formattedPhone = '+' + (cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone);
 
+    // Merchant Owner Check
     if (isOwner) {
-      login(formattedPhone, 'Hakimi Shop Owner', []);
-    } else {
-      login(formattedPhone, name.trim() || 'Customer', getCollectedAddresses());
+      if (password.trim() === '123456' || password.trim().length >= 4) {
+        login(formattedPhone, 'Hakimi Shop Owner', [], password.trim());
+        resetForm();
+        return;
+      } else {
+        setErrorMsg('Invalid Merchant Password.');
+        return;
+      }
     }
 
-    resetForm();
+    // Customer Login / Registration
+    const finalAddresses = getCollectedAddresses();
+
+    if (mode === 'register') {
+      if (!name.trim()) {
+        setErrorMsg('Please enter your full name for registration.');
+        return;
+      }
+      if (finalAddresses.length === 0) {
+        setErrorMsg('Please add at least one delivery address or use GPS Pin.');
+        return;
+      }
+      login(formattedPhone, name.trim(), finalAddresses, password.trim());
+      resetForm();
+    } else {
+      // Sign In mode
+      const existingAccount = findRegisteredUser(cleanPhone);
+      if (existingAccount && existingAccount.password && existingAccount.password !== password.trim()) {
+        setErrorMsg('Incorrect password. Please try again.');
+        return;
+      }
+      const displayName = name.trim() || existingAccount?.name || 'Customer';
+      const userAddresses = finalAddresses.length > 0 ? finalAddresses : existingAccount?.addresses || [];
+      login(formattedPhone, displayName, userAddresses, password.trim());
+      resetForm();
+    }
   };
 
   const resetForm = () => {
     setPhoneNumber('');
     setName('');
+    setPassword('');
+    setShowPassword(false);
     setAddressesList([]);
     setCurrentAddressDetails('');
     setCurrentAddressType('Home');
     setCurrentGpsCoords(null);
-    setOtpCode('');
-    setGeneratedOtp('');
-    setStep('info');
     setErrorMsg('');
+    setSuccessMsg('');
+    setIsKnownUser(false);
+    setDetectedName('');
+    setMode('signin');
   };
 
   const closeAndReset = () => {
@@ -190,300 +239,280 @@ export function LoginModal() {
     <>
       <div className={`drawer-backdrop ${isLoginOpen ? 'active' : ''}`} onClick={closeAndReset} />
 
-      <div
-        className={`drawer-content ${isLoginOpen ? 'active' : ''}`}
-        style={{
-          maxHeight: '92vh',
-          borderTopLeftRadius: '24px',
-          borderTopRightRadius: '24px',
-          boxSizing: 'border-box'
-        }}
-      >
-        <div className="drawer-header" style={{ padding: '14px 18px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {step === 'otp' && (
+      <div className={`login-modal-wrapper ${isLoginOpen ? 'active' : ''}`}>
+        <div className="login-modal-card">
+          {/* Close button */}
+          <button className="login-modal-close-btn" onClick={closeAndReset} aria-label="Close Login">
+            <X size={18} />
+          </button>
+
+          {/* Left Hero Panel (Split Visual) */}
+          <div className="login-hero-panel">
+            <div className="login-hero-overlay" />
+            <div className="login-hero-content">
+              <div className="login-brand-header">
+                <img src="./logo.png" alt="Hakimi Supermarket" className="login-hero-logo" />
+                <div>
+                  <span className="login-hero-brand-name">HAKIMI</span>
+                  <span className="login-hero-brand-tag">SUPERMARKET</span>
+                </div>
+              </div>
+
+              <div className="login-hero-center">
+                <div className="login-hero-badge">
+                  <Sparkles size={14} className="hero-sparkle-icon" />
+                  <span>Instant 15-Min Delivery</span>
+                </div>
+                <h2 className="login-hero-title">
+                  {mode === 'register'
+                    ? 'Join Us Today!'
+                    : isOwner
+                    ? 'Merchant Control'
+                    : detectedName
+                    ? `WELCOME, ${detectedName.toUpperCase()}!`
+                    : 'WELCOME BACK!'}
+                </h2>
+                <p className="login-hero-desc">
+                  {mode === 'register'
+                    ? 'Create your account to save favorite items, pin delivery locations, and get superfast order tracking.'
+                    : isOwner
+                    ? `Logging in as shop operator (${OWNER_PHONE_DISPLAY}) to manage orders and stock.`
+                    : detectedName
+                    ? `Welcome back, ${detectedName}! Enter your password to access your cart and saved addresses.`
+                    : 'We are delighted to have you here! Enter your phone and password to continue.'}
+                </p>
+              </div>
+
+              <div className="login-hero-footer">
+                <div className="login-trust-pill">
+                  <ShieldCheck size={14} />
+                  <span>100% Safe & Secure Login</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Form Panel */}
+          <div className="login-form-panel">
+            {/* Mode Switcher Tabs */}
+            <div className="login-tabs-bar">
               <button
                 type="button"
-                onClick={() => setStep('info')}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}
+                className={`login-tab-btn ${mode === 'signin' ? 'active' : ''}`}
+                onClick={() => {
+                  setMode('signin');
+                  setErrorMsg('');
+                }}
               >
-                <ArrowLeft size={18} color="var(--primary)" />
+                Sign In
               </button>
-            )}
-            <img src="./logo.png" alt="Hakimi General Store" className="login-logo" />
-            <h3 className="drawer-title" style={{ fontSize: '16px', fontWeight: 800 }}>
-              {step === 'otp' ? 'OTP Verification' : isOwner ? 'Merchant Login' : 'Hakimi General Store'}
-            </h3>
-          </div>
-          <button className="btn-close" onClick={closeAndReset}>
-            <X size={16} />
-          </button>
-        </div>
-
-        {step === 'info' ? (
-          <form
-            onSubmit={handleSendOtp}
-            style={{
-              padding: '16px 18px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-              overflowY: 'auto',
-              boxSizing: 'border-box'
-            }}
-          >
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.4', margin: 0 }}>
-              {isOwner
-                ? `Logging in as shop operator (${OWNER_PHONE_DISPLAY}) to manage inventory and view orders.`
-                : 'Sign in to save your cart, select your address, and track instant home deliveries.'}
-            </p>
-
-            {errorMsg && <div className="login-error-alert">{errorMsg}</div>}
-
-            <div className="input-group">
-              <label className="input-label" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-main)' }}>
-                Mobile Number
-              </label>
-              <input
-                type="tel"
-                className="form-input"
-                placeholder="e.g. 1234567890"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                style={{ fontSize: '13px', padding: '10px 12px' }}
-                required
-              />
+              <button
+                type="button"
+                className={`login-tab-btn ${mode === 'register' ? 'active' : ''}`}
+                onClick={() => {
+                  setMode('register');
+                  setErrorMsg('');
+                }}
+              >
+                Register
+              </button>
+              <div className={`login-tab-indicator ${mode}`} />
             </div>
 
-            {!isOwner && (
-              <>
-                <div className="input-group">
-                  <label className="input-label" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-main)' }}>
-                    Full Name
-                  </label>
+            <form onSubmit={handleSubmit} className="login-form-body">
+              {/* Error Alert */}
+              {errorMsg && <div className="login-alert-box error">{errorMsg}</div>}
+
+              {/* Success / Detection Banner */}
+              {successMsg && <div className="login-alert-box success">{successMsg}</div>}
+
+              {isOwner && (
+                <div className="login-alert-box owner-alert">
+                  <ShieldCheck size={16} />
+                  <span>Merchant account detected. Submitting opens the Owner Portal.</span>
+                </div>
+              )}
+
+              {/* Mobile Number Field */}
+              <div className="login-input-group">
+                <label className="login-label">Mobile Number</label>
+                <div className="login-input-field-wrap">
+                  <Phone size={16} className="login-field-icon" />
                   <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Enter your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    style={{ fontSize: '13px', padding: '10px 12px' }}
+                    type="tel"
+                    className="login-input"
+                    placeholder="Enter 10-digit mobile number"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    maxLength={14}
                     required
                   />
+                  {isKnownUser && <CheckCircle2 size={16} className="login-verified-icon" />}
                 </div>
+              </div>
 
-                <div className="login-address-box">
-                  <div className="login-address-head">
-                    <span className="login-address-title">Delivery Address</span>
-                    <button type="button" onClick={handleGetLocation} disabled={isLocating} className="login-gps-btn">
-                      <MapPin size={12} />
-                      <span>{isLocating ? 'Locating...' : currentGpsCoords ? 'GPS Pinned ✓' : 'GPS Pin (Optional)'}</span>
-                    </button>
-                  </div>
-
-                  <div className="login-address-types">
-                    {['Home', 'Work', 'Other'].map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setCurrentAddressType(type)}
-                        style={{
-                          flex: 1,
-                          padding: '6px 4px',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          backgroundColor: currentAddressType === type ? 'var(--primary)' : '#ffffff',
-                          color: currentAddressType === type ? '#ffffff' : 'var(--text-muted)',
-                          border: currentAddressType === type ? '1px solid var(--primary)' : '1px solid var(--border-subtle)',
-                          borderRadius: 'var(--radius-sm)',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 6, width: '100%', boxSizing: 'border-box' }}>
+              {/* Full Name (Always in Register mode, optional auto-fill in Sign In) */}
+              {(mode === 'register' || (!isOwner && isKnownUser)) && (
+                <div className="login-input-group">
+                  <label className="login-label">Full Name</label>
+                  <div className="login-input-field-wrap">
+                    <UserIcon size={16} className="login-field-icon" />
                     <input
                       type="text"
-                      className="form-input"
-                      placeholder="e.g. House 22, Block B..."
-                      value={currentAddressDetails}
-                      onChange={(e) => setCurrentAddressDetails(e.target.value)}
-                      style={{ flex: 1, padding: '8px 10px', fontSize: '12px' }}
+                      className="login-input"
+                      placeholder="e.g. Mustafizur Rahman"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required={mode === 'register'}
                     />
+                  </div>
+                </div>
+              )}
+
+              {/* Password Field */}
+              <div className="login-input-group">
+                <label className="login-label">Password</label>
+                <div className="login-input-field-wrap">
+                  <Lock size={16} className="login-field-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className="login-input"
+                    placeholder="Enter your secret password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="login-pass-toggle"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label="Toggle password visibility"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Delivery Location & Address Setup (In Register mode or optional expand in Sign In) */}
+              {!isOwner && (mode === 'register' || addressesList.length === 0) && (
+                <div className="login-location-section">
+                  <div className="login-location-head">
+                    <span className="login-location-title">Delivery Location & Address</span>
                     <button
                       type="button"
-                      onClick={handleAddAddress}
-                      className="login-add-addr-btn"
+                      onClick={handleGetLocation}
+                      disabled={isLocating}
+                      className="login-gps-pin-btn"
                     >
-                      + Add
+                      <MapPin size={13} />
+                      <span>{isLocating ? 'Locating GPS...' : currentGpsCoords ? 'GPS Pinned ✓' : 'Pin Live GPS'}</span>
                     </button>
                   </div>
 
+                  {/* Address Type Tag Selectors */}
+                  <div className="login-address-type-pills">
+                    {[
+                      { label: 'Home', icon: Home },
+                      { label: 'Work', icon: Briefcase },
+                      { label: 'Other', icon: Building2 }
+                    ].map((item) => {
+                      const Icon = item.icon;
+                      const isSel = currentAddressType === item.label;
+                      return (
+                        <button
+                          key={item.label}
+                          type="button"
+                          onClick={() => setCurrentAddressType(item.label)}
+                          className={`login-type-pill ${isSel ? 'active' : ''}`}
+                        >
+                          <Icon size={12} />
+                          <span>{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Input details + Add address button */}
+                  <div className="login-address-input-row">
+                    <input
+                      type="text"
+                      className="login-input sub-input"
+                      placeholder="e.g. House 42, Green Street, Block B..."
+                      value={currentAddressDetails}
+                      onChange={(e) => setCurrentAddressDetails(e.target.value)}
+                    />
+                    <button type="button" onClick={handleAddAddress} className="login-add-addr-btn">
+                      <Plus size={14} />
+                      <span>Add</span>
+                    </button>
+                  </div>
+
+                  {/* Saved Address List */}
                   {addressesList.length > 0 && (
-                    <div className="login-addr-list">
+                    <div className="login-saved-addresses-list">
                       {addressesList.map((addr, idx) => (
-                        <div key={idx} className="login-addr-row">
-                          <div className="login-addr-text">
-                            <strong>{addr.type}:</strong> {addr.details} {addr.gps ? '📍' : ''}
+                        <div key={idx} className="login-address-item-chip">
+                          <div className="login-addr-info">
+                            <span className="login-addr-tag">{addr.type}</span>
+                            <span className="login-addr-text">
+                              {addr.details} {addr.gps ? '📍' : ''}
+                            </span>
                           </div>
-                          <button type="button" onClick={() => handleRemoveAddress(idx)} className="login-addr-remove">
-                            Remove
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAddress(idx)}
+                            className="login-addr-del-btn"
+                          >
+                            <X size={13} />
                           </button>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
-              </>
-            )}
+              )}
 
-            {isOwner && (
-              <div className="login-owner-note">
-                <ShieldAlert size={16} color="var(--primary)" style={{ flexShrink: 0 }} />
-                <span>Verified merchant number. Submitting will open the shop control dashboard.</span>
-              </div>
-            )}
+              {/* Submit Action Button */}
+              <button type="submit" className="login-submit-pill-btn">
+                <span>
+                  {mode === 'register'
+                    ? 'Create Account & Sign In'
+                    : isOwner
+                    ? 'Access Merchant Portal'
+                    : 'Sign In'}
+                </span>
+                <ArrowRight size={16} />
+              </button>
 
-            <button
-              type="submit"
-              className="btn-primary"
-              style={{
-                marginTop: '6px',
-                padding: '12px',
-                fontSize: '14px',
-                borderRadius: 'var(--radius-md)',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)'
-              }}
-            >
-              <Send size={16} />
-              <span>Send OTP Verification</span>
-            </button>
-          </form>
-        ) : (
-          <form
-            onSubmit={handleVerifyOtp}
-            style={{
-              padding: '20px 18px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '14px',
-              boxSizing: 'border-box'
-            }}
-          >
-            <div style={{ textAlign: 'center' }}>
-              <div className="otp-icon-circle">
-                <CheckCircle size={24} color="var(--primary)" />
-              </div>
-              <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', marginBottom: '4px' }}>
-                Enter Verification Code
-              </h4>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.4' }}>
-                We sent a 6-digit OTP code to <strong>{phoneNumber}</strong>
-              </p>
-            </div>
-
-            {showNotification && (
-              <div className="otp-whatsapp-banner">
-                <div className="otp-whatsapp-left">
-                  <span style={{ fontSize: '16px' }}>💬</span>
-                  <span style={{ fontWeight: 600 }}>
-                    OTP sent via WhatsApp to <strong>{phoneNumber}</strong>
+              {/* Footer Switch Prompt */}
+              <div className="login-footer-switch">
+                {mode === 'register' ? (
+                  <span>
+                    Already have an account?{' '}
+                    <button
+                      type="button"
+                      className="login-switch-link"
+                      onClick={() => setMode('signin')}
+                    >
+                      Sign In
+                    </button>
                   </span>
-                </div>
-                <a
-                  href={sendOtpViaWhatsApp(phoneNumber.replace(/\D/g, ''), generatedOtp)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="otp-whatsapp-btn"
-                >
-                  Open WhatsApp
-                </a>
+                ) : (
+                  <span>
+                    Don't have an account?{' '}
+                    <button
+                      type="button"
+                      className="login-switch-link"
+                      onClick={() => setMode('register')}
+                    >
+                      Register Now
+                    </button>
+                  </span>
+                )}
               </div>
-            )}
-
-            {errorMsg && <div className="login-error-alert otp-error-alert">{errorMsg}</div>}
-
-            <div className="input-group">
-              <label className="input-label" style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700 }}>
-                6-Digit OTP Code
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="• • • • • •"
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                maxLength={6}
-                required
-                style={{
-                  textAlign: 'center',
-                  letterSpacing: '10px',
-                  fontSize: '20px',
-                  fontWeight: 800,
-                  padding: '12px',
-                  borderRadius: 'var(--radius-md)',
-                  border: '2px solid var(--primary)'
-                }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, fontSize: '12px', marginTop: '-4px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Didn't get the code?</span>
-              <button
-                type="button"
-                onClick={handleResendOtp}
-                disabled={resendTimer > 0}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: resendTimer > 0 ? '#94a3b8' : 'var(--primary)',
-                  fontWeight: 700,
-                  cursor: resendTimer > 0 ? 'not-allowed' : 'pointer',
-                  fontSize: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: 0
-                }}
-              >
-                <RefreshCw size={12} />
-                <span>{resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}</span>
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', gap: 10, marginTop: '4px' }}>
-              <button
-                type="button"
-                className="btn-primary"
-                style={{
-                  flex: 1,
-                  backgroundColor: '#f1f5f9',
-                  border: '1px solid var(--border-subtle)',
-                  color: 'var(--text-main)',
-                  padding: '12px'
-                }}
-                onClick={() => setStep('info')}
-              >
-                Change Details
-              </button>
-
-              <button
-                type="submit"
-                className="btn-primary"
-                style={{
-                  flex: 2,
-                  padding: '12px',
-                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)'
-                }}
-              >
-                Verify & Log In
-              </button>
-            </div>
-          </form>
-        )}
+            </form>
+          </div>
+        </div>
       </div>
     </>
   );

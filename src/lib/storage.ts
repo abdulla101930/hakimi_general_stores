@@ -1,5 +1,15 @@
+import type { Address } from '../types';
+
+export interface RegisteredAccount {
+  phone: string;
+  name: string;
+  password?: string;
+  addresses: Address[];
+}
+
 const CRITICAL_KEYS = [
   'hakimi_user',
+  'hakimi_registered_users',
   'hakimi_active_order',
   'hakimi_maintenance_mode',
   'hakimi_catalog',
@@ -100,3 +110,27 @@ export function resetAppStorageAndReload(): void {
   }
   window.location.reload();
 }
+
+export function getRegisteredUsers(): Record<string, RegisteredAccount> {
+  return safeJSONParse<Record<string, RegisteredAccount>>('hakimi_registered_users', {});
+}
+
+export function saveRegisteredUser(account: RegisteredAccount): void {
+  const users = getRegisteredUsers();
+  const cleanKey = account.phone.replace(/\D/g, '');
+  if (!cleanKey) return;
+  users[cleanKey] = {
+    ...users[cleanKey],
+    ...account,
+    phone: account.phone.trim()
+  };
+  safeJSONStringify('hakimi_registered_users', users);
+}
+
+export function findRegisteredUser(phone: string): RegisteredAccount | null {
+  const users = getRegisteredUsers();
+  const cleanKey = phone.replace(/\D/g, '');
+  if (!cleanKey) return null;
+  return users[cleanKey] || null;
+}
+

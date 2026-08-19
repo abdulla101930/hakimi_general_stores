@@ -80,11 +80,4 @@ export const sendCheckoutOrderToWhatsApp = (
   return `https://api.whatsapp.com/send?phone=${OWNER_WHATSAPP}&text=${encodedMsg}`;
 };
 
-export const sendOtpViaWhatsApp = (phone: string, code: string, resend = false): string => {
-  const clean = phone.replace(/\D/g, '');
-  const full = clean.length === 10 ? `91${clean}` : clean;
-  const message = resend
-    ? `Your new Hakimi Supermarket verification OTP code is: ${code}. Please enter this 6-digit code in the app.`
-    : `Your Hakimi Supermarket verification OTP code is: ${code}. Please enter this 6-digit code in the app to complete your login.`;
-  return `https://api.whatsapp.com/send?phone=${full}&text=${encodeURIComponent(message)}`;
-};
+
