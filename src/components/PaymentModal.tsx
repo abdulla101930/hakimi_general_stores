@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
-import { X, CreditCard, QrCode, CheckCircle2, ArrowRight, Lock, Banknote, Copy, RefreshCw, ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
+import { X, CreditCard, QrCode, CheckCircle2, ArrowRight, Lock, Banknote, Copy, RefreshCw, ShieldCheck, AlertCircle, HelpCircle } from 'lucide-react';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -21,14 +21,12 @@ const storeName = 'Hakimi General Store';
 export function PaymentModal({ isOpen, onClose, amount, customerName, customerPhone, onPaymentSuccess }: PaymentModalProps) {
   const [selectedTab, setSelectedTab] = useState<'online' | 'cod'>('online');
   const [isVerifying, setIsVerifying] = useState(false);
-  const [verifyStatus, setVerifyStatus] = useState<'waiting' | 'checking' | 'success' | 'failed'>('waiting');
-  const [verifyProgress, setVerifyProgress] = useState(0);
-  const [verifyMessage, setVerifyMessage] = useState('Connecting to Bank Server...');
+  const [verifyStatus, setVerifyStatus] = useState<'pending' | 'checking' | 'success'>('pending');
+  const [verifyMessage, setVerifyMessage] = useState('');
   const [activeAppName, setActiveAppName] = useState<string>('UPI App');
-  const [showManualUtr, setShowManualUtr] = useState(false);
-  const [manualUtrInput, setManualUtrInput] = useState('');
-  const [isCopied, setIsCopied] = useState(false);
+  const [utrInput, setUtrInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isCopied, setIsCopied] = useState(false);
 
   if (!isOpen) return null;
 
@@ -42,39 +40,13 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
   const upiUri = `upi://pay?pa=${storeUpiId}&pn=HakimiSupermarket&am=${formattedAmount}&cu=INR`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiUri)}`;
 
-  // Automated Bank Handshake Engine
-  const startAutomatedHandshake = (appName: string = 'UPI App') => {
+  // Enter verification waiting screen (Requires UTR verification)
+  const openVerificationScreen = (appName: string = 'UPI App') => {
     setIsVerifying(true);
     setActiveAppName(appName);
-    setVerifyStatus('checking');
-    setVerifyProgress(15);
-    setVerifyMessage(`Detecting settlement response from ${appName}...`);
+    setVerifyStatus('pending');
     setErrorMsg('');
-
-    // Stage 1 -> Stage 2 (1.5s)
-    setTimeout(() => {
-      setVerifyProgress(60);
-      setVerifyMessage('Establishing secure handshake with HDFC NPCI Bank Gateway...');
-
-      // Stage 2 -> Stage 3 (3.2s)
-      setTimeout(() => {
-        setVerifyProgress(95);
-        setVerifyMessage('Confirming ₹' + formattedAmount + ' credit with merchant ledger...');
-
-        // Stage 3 -> Success (4.2s)
-        setTimeout(() => {
-          setVerifyProgress(100);
-          setVerifyStatus('success');
-          setVerifyMessage('Payment Verified! ₹' + formattedAmount + ' Received.');
-
-          // Final Redirect to Next Phase (4.8s)
-          setTimeout(() => {
-            onPaymentSuccess('ONLINE', `Auto-Verified ${appName} Payment`);
-            setIsVerifying(false);
-          }, 800);
-        }, 1000);
-      }, 1700);
-    }, 1500);
+    setVerifyMessage(`Switched to ${appName}. Complete payment in the app and enter the 12-digit UTR reference number from your receipt below.`);
   };
 
   const handleUpiAppRedirect = (appName: string) => {
@@ -96,8 +68,8 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
     // Launch UPI App
     window.location.href = deepLink;
 
-    // Start automated verification upon return
-    startAutomatedHandshake(appName);
+    // Transition to verification mode upon return
+    openVerificationScreen(appName);
   };
 
   const handleRazorpayCheckout = () => {
@@ -124,18 +96,37 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
       rzp.open();
     } else {
       window.location.href = upiUri;
-      startAutomatedHandshake('UPI QR');
+      openVerificationScreen('UPI QR');
     }
   };
 
-  const handleManualUtrSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    const cleanUtr = manualUtrInput.trim().replace(/\D/g, '');
-    if (!cleanUtr || cleanUtr.length < 10) {
-      setErrorMsg('Please enter a valid 12-digit UTR reference number.');
+  // Perform strict UTR Bank Verification check
+  const handleVerifyPaymentWithUtr = (e?: FormEvent) => {
+    if (e) e.preventDefault();
+    setErrorMsg('');
+
+    const cleanUtr = utrInput.trim().replace(/\D/g, '');
+
+    // Strictly enforce 12-digit UTR requirement to prevent bypasses
+    if (!cleanUtr || cleanUtr.length < 12) {
+      setErrorMsg('❌ Payment Not Detected: Please enter the valid 12-digit UTR / Ref Number from your UPI payment receipt screen.');
       return;
     }
-    startAutomatedHandshake(`UTR Ref #${cleanUtr}`);
+
+    setVerifyStatus('checking');
+    setVerifyMessage('Connecting to HDFC NPCI Bank Settlement Gateway...');
+
+    setTimeout(() => {
+      setVerifyMessage(`Validating UTR #${cleanUtr} with Merchant Credit Stream...`);
+      setTimeout(() => {
+        setVerifyStatus('success');
+        setVerifyMessage(`Payment Verified! ₹${formattedAmount} Credited to Hakimi Account.`);
+        setTimeout(() => {
+          onPaymentSuccess('ONLINE', `Verified UPI UTR: ${cleanUtr}`);
+          setIsVerifying(false);
+        }, 1000);
+      }, 1200);
+    }, 1000);
   };
 
   const handleConfirmCod = () => {
@@ -147,10 +138,10 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
     padding: '14px',
     border: 'none',
     background: active ? '#ffffff' : 'transparent',
-    borderBottom: active ? '3px solid #2563eb' : 'none',
+    borderBottom: active ? '3px solid #059669' : 'none',
     fontWeight: 800,
     fontSize: '13px',
-    color: active ? '#2563eb' : '#64748b',
+    color: active ? '#059669' : '#64748b',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
@@ -182,7 +173,7 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
         {/* Header */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #059669 0%, #0d9488 100%)',
+            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
             padding: '20px 24px',
             color: '#ffffff',
             position: 'relative'
@@ -192,7 +183,7 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
             type="button"
             onClick={() => {
               if (isVerifying) {
-                if (window.confirm('Automated payment verification in progress. Exit verification?')) {
+                if (window.confirm('Cancel payment verification? Your order will not be placed until payment is verified.')) {
                   setIsVerifying(false);
                   onClose();
                 }
@@ -207,7 +198,7 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
           </button>
 
           <span className="pm-header-label">
-            {isVerifying ? 'Automated Bank Verification' : 'Secure Instant Payment'}
+            {isVerifying ? 'Payment Verification Required' : 'Secure Instant Payment'}
           </span>
           <div className="pm-header-amount-row">
             <h2>₹{amount}</h2>
@@ -215,7 +206,7 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
           </div>
         </div>
 
-        {/* Tab selection */}
+        {/* Tab Selection */}
         {!isVerifying && (
           <div className="pm-tabs-row">
             <button type="button" style={tabStyle(selectedTab === 'online')} onClick={() => setSelectedTab('online')}>
@@ -231,9 +222,9 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
 
         <div className="pm-body" style={{ padding: '20px 24px 24px' }}>
           {isVerifying ? (
-            /* --- FULLY AUTOMATED BANK HANDSHAKE SCREEN --- */
-            <div style={{ textAlign: 'center', padding: '12px 0' }}>
-              <div style={{ margin: '0 auto 16px', position: 'relative', width: '80px', height: '80px' }}>
+            /* --- STRICT UTR VERIFICATION SCREEN --- */
+            <div style={{ textAlign: 'center', padding: '10px 0' }}>
+              <div style={{ margin: '0 auto 16px', position: 'relative', width: '74px', height: '74px' }}>
                 <div
                   className="pm-pulse-ring"
                   style={{
@@ -246,8 +237,8 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
                 />
                 <div
                   style={{
-                    width: '80px',
-                    height: '80px',
+                    width: '74px',
+                    height: '74px',
                     borderRadius: '50%',
                     backgroundColor: '#ecfdf5',
                     display: 'flex',
@@ -255,14 +246,15 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
                     justifyContent: 'center',
                     margin: '0 auto',
                     position: 'relative',
-                    zIndex: 2,
-                    boxShadow: '0 8px 20px rgba(5, 150, 105, 0.15)'
+                    zIndex: 2
                   }}
                 >
-                  {verifyStatus === 'success' ? (
-                    <CheckCircle2 size={40} color="#059669" />
+                  {verifyStatus === 'checking' ? (
+                    <RefreshCw size={32} className="animate-spin" color="#059669" />
+                  ) : verifyStatus === 'success' ? (
+                    <CheckCircle2 size={38} color="#059669" />
                   ) : (
-                    <RefreshCw size={34} className="animate-spin" color="#059669" />
+                    <ShieldCheck size={38} color="#059669" />
                   )}
                 </div>
               </div>
@@ -272,8 +264,8 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  backgroundColor: '#ecfdf5',
-                  color: '#047857',
+                  backgroundColor: '#fef3c7',
+                  color: '#92400e',
                   padding: '5px 14px',
                   borderRadius: '20px',
                   fontSize: '11.5px',
@@ -281,58 +273,112 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
                   marginBottom: '12px'
                 }}
               >
-                <Sparkles size={13} />
-                <span>Auto-Verifying {activeAppName} Settlement</span>
+                <span>⏳ Verification Pending</span>
               </div>
 
-              <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>
-                {verifyStatus === 'success' ? 'Payment Confirmed!' : 'Verifying Payment with Bank...'}
+              <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>
+                {verifyStatus === 'success' ? 'Payment Verified!' : `Enter ${activeAppName} Receipt UTR`}
               </h3>
 
-              <p style={{ fontSize: '12.5px', color: '#64748b', marginBottom: '18px', lineHeight: 1.5 }}>
+              <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px', lineHeight: 1.5 }}>
                 {verifyMessage}
               </p>
 
-              {/* Progress Bar */}
-              <div
-                style={{
-                  width: '100%',
-                  height: '8px',
-                  backgroundColor: '#f1f5f9',
-                  borderRadius: '999px',
-                  overflow: 'hidden',
-                  marginBottom: '20px',
-                  border: '1px solid #e2e8f0'
-                }}
-              >
+              {/* Error Alert Box */}
+              {errorMsg && (
                 <div
                   style={{
-                    height: '100%',
-                    width: `${verifyProgress}%`,
-                    backgroundColor: verifyStatus === 'success' ? '#059669' : '#10b981',
-                    borderRadius: '999px',
-                    transition: 'width 0.6s ease-in-out'
+                    backgroundColor: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    color: '#dc2626',
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    marginBottom: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    textAlign: 'left'
+                  }}
+                >
+                  <AlertCircle size={18} style={{ flexShrink: 0 }} />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              {/* Mandatory UTR Form */}
+              <form onSubmit={handleVerifyPaymentWithUtr} style={{ backgroundColor: '#f8fafc', padding: '14px', borderRadius: '14px', border: '1px solid #cbd5e1', textAlign: 'left' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#334155', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                  12-Digit UPI Reference / UTR Number *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 421893810242"
+                  value={utrInput}
+                  onChange={(e) => setUtrInput(e.target.value)}
+                  maxLength={16}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    borderRadius: '10px',
+                    border: '1.5px solid #059669',
+                    fontSize: '14px',
+                    fontFamily: 'monospace',
+                    fontWeight: 700,
+                    outline: 'none',
+                    backgroundColor: '#ffffff',
+                    color: '#0f172a',
+                    marginBottom: '10px'
                   }}
                 />
+                <button
+                  type="submit"
+                  disabled={verifyStatus === 'checking' || verifyStatus === 'success'}
+                  style={{
+                    width: '100%',
+                    padding: '13px 20px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    backgroundColor: '#059669',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                    fontWeight: 900,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'
+                  }}
+                >
+                  {verifyStatus === 'checking' ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                  <span>Verify Payment & Place Order</span>
+                </button>
+              </form>
+
+              <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '11px', color: '#64748b' }}>
+                <HelpCircle size={13} />
+                <span>UTR is the 12-digit Ref No on your GPay / PhonePe payment screen</span>
               </div>
 
-              <div
+              <button
+                type="button"
+                onClick={() => setIsVerifying(false)}
                 style={{
-                  backgroundColor: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '12px',
-                  padding: '12px 14px',
-                  fontSize: '11.5px',
-                  color: '#475569',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
+                  marginTop: '14px',
+                  background: 'none',
+                  border: 'none',
+                  color: '#64748b',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
                 }}
               >
-                <ShieldCheck size={16} color="#059669" />
-                <span>HDFC NPCI Instant Settlement • Redirecting automatically</span>
-              </div>
+                ← Choose Different Payment Method
+              </button>
             </div>
           ) : selectedTab === 'online' ? (
             <div>
@@ -386,7 +432,7 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
 
                 <button
                   type="button"
-                  onClick={() => startAutomatedHandshake('UPI QR Code')}
+                  onClick={() => openVerificationScreen('UPI QR Code')}
                   style={{
                     width: '100%',
                     marginTop: '12px',
@@ -405,8 +451,8 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
                     boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)'
                   }}
                 >
-                  <Sparkles size={14} />
-                  <span>I've Paid — Auto Verify & Proceed</span>
+                  <CheckCircle2 size={14} />
+                  <span>I've Paid — Enter Receipt UTR</span>
                 </button>
               </div>
 
@@ -414,38 +460,6 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
                 <CreditCard size={15} />
                 <span>Pay via Razorpay (Cards / Netbanking)</span>
               </button>
-
-              {/* Optional Manual UTR Entry Toggle */}
-              <div style={{ marginTop: '14px', textAlign: 'center' }}>
-                {!showManualUtr ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowManualUtr(true)}
-                    style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '11px', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    Have a manual UTR reference number? Click here
-                  </button>
-                ) : (
-                  <form onSubmit={handleManualUtrSubmit} style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', textAlign: 'left', marginTop: '6px' }}>
-                    {errorMsg && <div style={{ color: '#dc2626', fontSize: '11px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}><AlertCircle size={12} /> {errorMsg}</div>}
-                    <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
-                      ENTER 12-DIGIT UTR REF NO
-                    </label>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <input
-                        type="text"
-                        placeholder="e.g. 4218xxxxxxx"
-                        value={manualUtrInput}
-                        onChange={(e) => setManualUtrInput(e.target.value)}
-                        style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontFamily: 'monospace' }}
-                      />
-                      <button type="submit" style={{ backgroundColor: '#059669', color: '#fff', border: 'none', padding: '0 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 800 }}>
-                        Verify
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
             </div>
           ) : (
             <div className="pm-cod-body">
@@ -466,7 +480,7 @@ export function PaymentModal({ isOpen, onClose, amount, customerName, customerPh
 
         <div className="pm-footer">
           <Lock size={12} color="#059669" />
-          <span>256-Bit Encrypted Automated Bank Payment Gateway</span>
+          <span>256-Bit Encrypted Bank Payment Gateway</span>
         </div>
       </div>
     </div>

@@ -88,6 +88,18 @@ export function LoginModal() {
     }
   }, [phoneNumber]);
 
+  // Lock background body scroll when login modal is active
+  useEffect(() => {
+    if (isLoginOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isLoginOpen]);
+
   if (!isLoginOpen) return null;
 
   const handleGetLocation = () => {

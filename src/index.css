@@ -2431,6 +2431,32 @@ a {
   transition: transform 0.15s var(--ease-out);
 }
 
+/* Quantity Picker Sheet Add to Cart Button */
+.btn-add-action,
+.qty-sheet-add-btn {
+  width: 100% !important;
+  padding: 14px 20px !important;
+  border-radius: 16px !important;
+  border: none !important;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  font-size: 15px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.02em !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.4) !important;
+  transition: transform 0.18s var(--ease-out), box-shadow 0.2s var(--ease-out) !important;
+}
+
+.btn-add-action:active,
+.qty-sheet-add-btn:active {
+  transform: scale(0.97) !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+}
+
 .btn-change-address:active {
   transform: scale(0.94);
 }
@@ -4888,6 +4914,25 @@ a {
    Redesigned Split-Panel Login & Registration System
    ============================================================ */
 
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.drawer-backdrop.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
 .login-modal-wrapper {
   position: fixed;
   inset: 0;
@@ -5445,28 +5490,112 @@ a {
   text-decoration: underline;
 }
 
-/* Responsive Mobile Stacking */
+/* Responsive Mobile Stacking & Touch Polish */
 @media (max-width: 680px) {
+  .login-modal-wrapper {
+    padding: 10px;
+    align-items: center;
+  }
+
   .login-modal-card {
     grid-template-columns: 1fr;
-    max-height: 94vh;
+    max-height: 90dvh;
+    max-height: 90vh;
     border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    width: 100%;
+  }
+
+  .login-modal-close-btn {
+    top: 12px;
+    right: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    z-index: 30;
+    width: 32px;
+    height: 32px;
   }
 
   .login-hero-panel {
-    padding: 20px 20px 16px;
+    padding: 16px 18px 12px;
+    min-height: auto;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  }
+
+  .login-hero-content {
+    gap: 8px;
+  }
+
+  .login-hero-desc,
+  .login-hero-footer {
+    display: none;
   }
 
   .login-hero-title {
-    font-size: 20px;
+    font-size: 17px;
   }
 
-  .login-hero-desc {
-    font-size: 11.5px;
+  .login-brand-header {
+    gap: 8px;
+  }
+
+  .login-hero-logo {
+    width: 34px;
+    height: 34px;
+  }
+
+  .login-hero-brand-name {
+    font-size: 14px;
+  }
+
+  .login-hero-brand-tag {
+    font-size: 9px;
+  }
+
+  .login-hero-badge {
+    padding: 3px 10px;
+    font-size: 10px;
   }
 
   .login-form-panel {
-    padding: 20px 18px;
+    padding: 16px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .login-tabs-bar {
+    margin-bottom: 14px;
+    flex-shrink: 0;
+  }
+
+  .login-input {
+    padding: 12px 14px 12px 38px;
+    font-size: 15px; /* Touch-friendly size */
+  }
+
+  .login-address-input-row {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .login-add-addr-btn {
+    width: 100%;
+    padding: 9px 12px;
+    justify-content: center;
+  }
+
+  .login-submit-pill-btn {
+    padding: 14px 20px;
+    font-size: 15px;
+    min-height: 48px;
   }
 }
 
