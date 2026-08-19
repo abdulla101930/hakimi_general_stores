@@ -12,6 +12,7 @@ import { DevLogsModal } from './components/DevLogsModal';
 import { MaintenancePage } from './components/MaintenancePage';
 import { CartPage } from './components/CartPage';
 import { MagicBottomNav } from './components/MagicBottomNav';
+import { BackToTop } from './components/BackToTop';
 import { useToast } from './hooks/useToast';
 import { startOwnerRingingAlarm, stopOwnerRingingAlarm, showNotification } from './lib/sound';
 import { ArrowRight } from 'lucide-react';
@@ -199,6 +200,7 @@ function MainLayout() {
 
       {currentView !== 'admin' && <MagicBottomNav isModalOpen={isMapOpen || isPWAOpen || isDevLogsOpen} />}
 
+      <BackToTop />
       <LoginModal />
       <MapPickerModal isOpen={isMapOpen} onClose={() => setMapOpen(false)} onSelectAddress={handleSelectMapAddress} />
       <PWAInstallModal isOpen={isPWAOpen} onClose={() => setPWAOpen(false)} />
