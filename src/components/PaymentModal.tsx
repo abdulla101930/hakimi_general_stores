@@ -1,4 +1,4 @@
-import { useState, useEffect, type CSSProperties, type FormEvent } from 'react';
+import { useState, type CSSProperties, type FormEvent } from 'react';
 import { X, CreditCard, QrCode, CheckCircle2, ArrowRight, Lock, Banknote, Copy, RefreshCw, ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
 
 interface PaymentModalProps {
