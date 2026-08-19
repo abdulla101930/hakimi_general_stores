@@ -1,14 +1,16 @@
 import type { Product, Coupon } from '../types';
 
-export const OWNER_PHONE = '+919993949604';
-export const OWNER_PHONE_DISPLAY = '+91 99939 49604';
-export const OWNER_WHATSAPP = '919993949604';
-export const OWNER_PHONE_LINK = 'tel:+919993949604';
+export const OWNER_PHONE = '+915253123456';
+export const OWNER_PHONE_DISPLAY = '+91 52531 23456';
+export const OWNER_WHATSAPP = '915253123456';
+export const OWNER_PHONE_LINK = 'tel:+915253123456';
+export const OWNER_NAME = 'Murtaza Basra';
+export const OWNER_PASSWORD = '786530';
 
 export const isOwnerPhone = (phone: string): boolean => {
   if (!phone) return false;
   const clean = phone.replace(/\D/g, '');
-  return clean === '919993949604' || clean === '9993949604';
+  return clean === '915253123456' || clean === '5253123456';
 };
 
 export const COUPONS: Record<string, Coupon> = {

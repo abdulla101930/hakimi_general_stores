@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useApp } from '../context/AppContext';
-import { isOwnerPhone, OWNER_PHONE_DISPLAY } from '../lib/constants';
+import { isOwnerPhone, OWNER_PHONE_DISPLAY, OWNER_NAME, OWNER_PASSWORD } from '../lib/constants';
 import { findRegisteredUser } from '../lib/storage';
 import type { Address } from '../types';
 import {
@@ -55,7 +55,7 @@ export function LoginModal() {
     if (cleanPhone.length >= 10) {
       if (isOwnerPhone(cleanPhone)) {
         setIsKnownUser(true);
-        setDetectedName('Merchant Owner');
+        setDetectedName(OWNER_NAME);
         setMode('signin');
         setErrorMsg('');
         return;
@@ -173,8 +173,8 @@ export function LoginModal() {
 
     // Merchant Owner Check
     if (isOwner) {
-      if (password.trim() === '123456' || password.trim().length >= 4) {
-        login(formattedPhone, 'Hakimi Shop Owner', [], password.trim());
+      if (password.trim() === OWNER_PASSWORD) {
+        login(formattedPhone, OWNER_NAME, [], password.trim());
         resetForm();
         return;
       } else {
@@ -184,28 +184,46 @@ export function LoginModal() {
     }
 
     // Customer Login / Registration
+    const existingAccount = findRegisteredUser(cleanPhone);
     const finalAddresses = getCollectedAddresses();
+
+    if (!existingAccount && mode === 'signin') {
+      setMode('register');
+      setErrorMsg('No account found with this phone number. Please enter your name and delivery address to register.');
+      return;
+    }
 
     if (mode === 'register') {
       if (!name.trim()) {
-        setErrorMsg('Please enter your full name for registration.');
+        setErrorMsg('Please enter your full name to register.');
+        return;
+      }
+      if (!password || password.trim().length < 4) {
+        setErrorMsg('Please create a password (at least 4 characters).');
         return;
       }
       if (finalAddresses.length === 0) {
-        setErrorMsg('Please add at least one delivery address or use GPS Pin.');
+        setErrorMsg('Please enter a delivery address or click "Pin Live GPS".');
         return;
       }
       login(formattedPhone, name.trim(), finalAddresses, password.trim());
       resetForm();
     } else {
-      // Sign In mode
-      const existingAccount = findRegisteredUser(cleanPhone);
+      // Sign In mode for existing account
       if (existingAccount && existingAccount.password && existingAccount.password !== password.trim()) {
         setErrorMsg('Incorrect password. Please try again.');
         return;
       }
-      const displayName = name.trim() || existingAccount?.name || 'Customer';
-      const userAddresses = finalAddresses.length > 0 ? finalAddresses : existingAccount?.addresses || [];
+
+      const displayName = existingAccount?.name || name.trim();
+      const userAddresses = existingAccount && existingAccount.addresses.length > 0 ? existingAccount.addresses : finalAddresses;
+
+      if (!displayName || userAddresses.length === 0) {
+        setMode('register');
+        setErrorMsg('Please complete your name and delivery address to sign in.');
+        return;
+      }
+
       login(formattedPhone, displayName, userAddresses, password.trim());
       resetForm();
     }
@@ -348,8 +366,8 @@ export function LoginModal() {
                 </div>
               </div>
 
-              {/* Full Name (Always in Register mode, optional auto-fill in Sign In) */}
-              {(mode === 'register' || (!isOwner && isKnownUser)) && (
+              {/* Full Name (Only in Register mode) */}
+              {mode === 'register' && (
                 <div className="login-input-group">
                   <label className="login-label">Full Name</label>
                   <div className="login-input-field-wrap">
@@ -391,8 +409,8 @@ export function LoginModal() {
                 </div>
               </div>
 
-              {/* Delivery Location & Address Setup (In Register mode or optional expand in Sign In) */}
-              {!isOwner && (mode === 'register' || addressesList.length === 0) && (
+              {/* Delivery Location & Address Setup (ONLY in Register mode) */}
+              {!isOwner && mode === 'register' && (
                 <div className="login-location-section">
                   <div className="login-location-head">
                     <span className="login-location-title">Delivery Location & Address</span>
