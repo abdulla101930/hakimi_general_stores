@@ -69,13 +69,12 @@ export function LoginModal() {
         if (existingAccount.addresses && existingAccount.addresses.length > 0) {
           setAddressesList(existingAccount.addresses);
         }
-        if (existingAccount.password) {
-          setPassword(existingAccount.password);
-        }
+        // Keep password empty so user must enter it manually
+        setPassword('');
         // Smoothly auto-switch to Sign In mode if existing user
         setMode('signin');
         setErrorMsg('');
-        setSuccessMsg(`Welcome back, ${existingAccount.name}! Enter your password to sign in.`);
+        setSuccessMsg(`Welcome back, ${existingAccount.name}! Please enter your password to sign in.`);
       } else {
         setIsKnownUser(false);
         setDetectedName('');
@@ -378,6 +377,7 @@ export function LoginModal() {
                     placeholder="Enter your secret password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                     required
                   />
                   <button
