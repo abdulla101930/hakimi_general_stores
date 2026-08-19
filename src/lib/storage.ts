@@ -111,16 +111,23 @@ export function resetAppStorageAndReload(): void {
   window.location.reload();
 }
 
+export function normalizePhoneKey(phone: string): string {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  return digits.length >= 10 ? digits.slice(-10) : digits;
+}
+
 export function getRegisteredUsers(): Record<string, RegisteredAccount> {
   return safeJSONParse<Record<string, RegisteredAccount>>('hakimi_registered_users', {});
 }
 
 export function saveRegisteredUser(account: RegisteredAccount): void {
   const users = getRegisteredUsers();
-  const cleanKey = account.phone.replace(/\D/g, '');
-  if (!cleanKey) return;
-  users[cleanKey] = {
-    ...users[cleanKey],
+  const key = normalizePhoneKey(account.phone);
+  if (!key) return;
+  
+  users[key] = {
+    ...users[key],
     ...account,
     phone: account.phone.trim()
   };
@@ -129,8 +136,18 @@ export function saveRegisteredUser(account: RegisteredAccount): void {
 
 export function findRegisteredUser(phone: string): RegisteredAccount | null {
   const users = getRegisteredUsers();
-  const cleanKey = phone.replace(/\D/g, '');
-  if (!cleanKey) return null;
-  return users[cleanKey] || null;
+  const key = normalizePhoneKey(phone);
+  if (!key) return null;
+  
+  if (users[key]) return users[key];
+  
+  const rawClean = phone.replace(/\D/g, '');
+  if (users[rawClean]) return users[rawClean];
+  
+  const match = Object.values(users).find(
+    (acc) => normalizePhoneKey(acc.phone) === key
+  );
+  return match || null;
 }
+
 

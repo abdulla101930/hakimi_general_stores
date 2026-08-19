@@ -78,7 +78,9 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const readUser = (): User | null => {
   const parsed = safeJSONParse<unknown>('hakimi_user', null);
   if (parsed && typeof parsed === 'object' && typeof (parsed as User).phone === 'string') {
-    return parsed as User;
+    const u = parsed as User;
+    saveRegisteredUser({ phone: u.phone, name: u.name, addresses: u.addresses || [], password: u.password });
+    return u;
   }
   return null;
 };

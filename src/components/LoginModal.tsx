@@ -79,17 +79,15 @@ export function LoginModal() {
       } else {
         setIsKnownUser(false);
         setDetectedName('');
-        // New user detected -> default to register if empty name
-        if (!name.trim()) {
-          setMode('register');
-        }
+        setMode('register');
+        setSuccessMsg('');
       }
     } else {
       setIsKnownUser(false);
       setDetectedName('');
       setSuccessMsg('');
     }
-  }, [phoneNumber, name]);
+  }, [phoneNumber]);
 
   if (!isLoginOpen) return null;
 
