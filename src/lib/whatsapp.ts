@@ -1,5 +1,5 @@
 import type { Order } from '../types';
-import { OWNER_WHATSAPP } from './constants';
+import { OWNER_WHATSAPP, OWNER_PHONE_DISPLAY } from './constants';
 
 export const buildOrderWhatsAppText = (order: Order): string => {
   const itemsText = order.items
@@ -13,7 +13,7 @@ export const buildOrderWhatsAppText = (order: Order): string => {
     ? `\n🗺️ *GPS Location Pin:* https://www.google.com/maps/search/?api=1&query=${order.address.gps.lat},${order.address.gps.lng}`
     : '';
 
-  return `🛒 *NEW ORDER - HAKIMI SUPER MARKET*
+  return `🛒 *NEW ORDER - HAKIMI SUPER MARKET (${OWNER_PHONE_DISPLAY})*
 --------------------------------------------
 🆔 *Order ID:* ${order.id}
 👤 *Customer:* ${order.customerName}

@@ -303,7 +303,7 @@ export function LoginModal() {
                   {mode === 'register'
                     ? 'Create your account to save favorite items, pin delivery locations, and get superfast order tracking.'
                     : isOwner
-                    ? `Logging in as shop operator (${OWNER_PHONE_DISPLAY}) to manage orders and stock.`
+                    ? `Logging in as shop operator (Login ID: 5253123456). All store bills & notifications are routed to ${OWNER_PHONE_DISPLAY}.`
                     : detectedName
                     ? `Welcome back, ${detectedName}! Enter your password to access your cart and saved addresses.`
                     : 'We are delighted to have you here! Enter your phone and password to continue.'}
@@ -356,7 +356,7 @@ export function LoginModal() {
               {isOwner && (
                 <div className="login-alert-box owner-alert">
                   <ShieldCheck size={16} />
-                  <span>Merchant account detected. Submitting opens the Owner Portal.</span>
+                  <span>Merchant Login ID detected (5253123456). Customer bills route to {OWNER_PHONE_DISPLAY}.</span>
                 </div>
               )}
 
