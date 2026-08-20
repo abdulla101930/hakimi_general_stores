@@ -25,19 +25,12 @@ interface PaymentModalProps {
   onPaymentSuccess: (method: 'COD' | 'ONLINE', paymentDetails?: string) => void;
 }
 
-interface RazorpayWindow {
-  Razorpay: new (options: Record<string, unknown>) => { open: () => void };
-}
-
 const bankAccountInfo = 'HDFC Bank - 7162 (Murtaza Basra)';
-const storeName = 'Hakimi General Store';
 
 export function PaymentModal({
   isOpen,
   onClose,
   amount,
-  customerName,
-  customerPhone,
   onPaymentSuccess
 }: PaymentModalProps) {
   const [selectedTab, setSelectedTab] = useState<'online' | 'cod'>('online');
@@ -141,32 +134,7 @@ export function PaymentModal({
     }, 1500);
   };
 
-  const handleRazorpayCheckout = () => {
-    const rzpWindow = window as unknown as RazorpayWindow;
-    if (rzpWindow.Razorpay) {
-      const options = {
-        key: 'rzp_test_HakimiStoreKey',
-        amount: amount * 100,
-        currency: 'INR',
-        name: storeName,
-        description: `Order Payment for ${customerName}`,
-        handler: (response: { razorpay_payment_id: string }) => {
-          onPaymentSuccess('ONLINE', `Razorpay Txn: ${response.razorpay_payment_id}`);
-        },
-        prefill: {
-          name: customerName,
-          contact: customerPhone
-        },
-        theme: {
-          color: '#059669'
-        }
-      };
-      const rzp = new rzpWindow.Razorpay(options);
-      rzp.open();
-    } else {
-      startAutomatedHandshake('UPI QR Code');
-    }
-  };
+
 
   const handleConfirmCod = () => {
     onPaymentSuccess('COD', 'Cash on Delivery');
@@ -608,16 +576,6 @@ export function PaymentModal({
                   <span>Start Automated Handshake (5-Min Timer)</span>
                 </button>
               </div>
-
-              <button
-                type="button"
-                onClick={handleRazorpayCheckout}
-                className="pm-razorpay-btn"
-                style={{ marginTop: '12px' }}
-              >
-                <CreditCard size={15} />
-                <span>Pay via Razorpay (Cards / Netbanking)</span>
-              </button>
             </div>
           ) : (
             <div className="pm-cod-body">

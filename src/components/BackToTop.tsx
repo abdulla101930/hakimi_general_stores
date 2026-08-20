@@ -8,8 +8,6 @@ export function BackToTop() {
 
   const totalItems = Object.values(cart).reduce((sum, count) => sum + count, 0);
 
-  if (!isVisible || isLoginOpen) return null;
-
   useEffect(() => {
     const handleScroll = () => {
       const mainScrollEl = document.querySelector('.main-content-scroll');
@@ -18,14 +16,17 @@ export function BackToTop() {
         mainScrollEl ? mainScrollEl.scrollTop : 0
       );
 
-      if (scrollTop > 250) {
+      if (scrollTop > 80) {
         setIsVisible(true);
       } else {
         setIsVisible(false);
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+    document.addEventListener('scroll', handleScroll, { passive: true, capture: true });
 
     const mainScrollEl = document.querySelector('.main-content-scroll');
     if (mainScrollEl) {
@@ -33,12 +34,15 @@ export function BackToTop() {
     }
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', handleScroll, { capture: true } as any);
+      document.removeEventListener('scroll', handleScroll, { capture: true } as any);
       if (mainScrollEl) {
         mainScrollEl.removeEventListener('scroll', handleScroll);
       }
     };
   }, []);
+
+  if (!isVisible || isLoginOpen) return null;
 
   const scrollToTop = () => {
     window.scrollTo({
