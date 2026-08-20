@@ -4,9 +4,20 @@ import { useApp } from '../context/AppContext';
 
 export function BackToTop() {
   const [isVisible, setIsVisible] = useState(false);
-  const { currentView, cart, activeOrder } = useApp();
+  const { currentView, cart, activeOrder, isLoginOpen } = useApp();
 
   const totalItems = Object.values(cart).reduce((sum, count) => sum + count, 0);
+
+  const isModalActive = Boolean(
+    isLoginOpen ||
+    (typeof document !== 'undefined' &&
+      (document.querySelector('.qty-sheet-backdrop') ||
+        document.querySelector('.modal-overlay') ||
+        document.querySelector('.drawer-backdrop.active') ||
+        document.querySelector('.login-modal-wrapper.active')))
+  );
+
+  if (!isVisible || isModalActive) return null;
 
   useEffect(() => {
     const handleScroll = () => {

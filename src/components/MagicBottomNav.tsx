@@ -12,7 +12,14 @@ export function MagicBottomNav({ isModalOpen }: MagicBottomNavProps) {
 
   const totalItems = Object.values(cart).reduce((sum, count) => sum + count, 0);
 
-  if (isLoginOpen || isModalOpen) return null;
+  const isDomModalOpen = typeof document !== 'undefined' && Boolean(
+    document.querySelector('.qty-sheet-backdrop') ||
+    document.querySelector('.modal-overlay') ||
+    document.querySelector('.drawer-backdrop.active') ||
+    document.querySelector('.login-modal-wrapper.active')
+  );
+
+  if (isLoginOpen || isModalOpen || isDomModalOpen) return null;
 
   const tabs = [
     { id: 'catalog' as const, label: 'Home', icon: Home },

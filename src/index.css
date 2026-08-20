@@ -4734,7 +4734,7 @@ a {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.45);
-  z-index: 400;
+  z-index: 99990;
   display: flex;
   align-items: flex-end;
   animation: qtyFadeIn 0.2s ease;
@@ -4743,6 +4743,8 @@ a {
 }
 
 .qty-sheet-panel {
+  position: relative;
+  z-index: 99991;
   width: 100%;
   margin: 0 auto;
   background: var(--bg-sheet);

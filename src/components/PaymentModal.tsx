@@ -71,21 +71,7 @@ export function PaymentModal({
     };
   }, [isHandshakeActive, handshakeState, timeLeft]);
 
-  // Window Focus / App Return Signal Detection
-  useEffect(() => {
-    if (!isHandshakeActive || handshakeState !== 'listening') return;
 
-    const handleFocus = () => {
-      // Auto-trigger verification check when returning to browser window
-      handleTriggerAutomatedSignal();
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isHandshakeActive, handshakeState]);
 
   if (!isOpen) return null;
 
@@ -497,7 +483,7 @@ export function PaymentModal({
                       marginTop: '6px'
                     }}
                   >
-                    Click above or switch back from your mobile app to simulate automated signal arrival
+                    The timer will continue running. Click above to verify bank settlement signal after completing payment in your UPI app.
                   </span>
                 </div>
               )}
