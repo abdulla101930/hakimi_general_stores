@@ -119,20 +119,7 @@ export function PaymentModal({
     }
   };
 
-  // Automated Signal Verification Processor
-  const handleTriggerAutomatedSignal = () => {
-    if (handshakeState !== 'listening') return;
 
-    setHandshakeState('verifying');
-
-    setTimeout(() => {
-      setHandshakeState('verified');
-      setTimeout(() => {
-        onPaymentSuccess('ONLINE', `Automated UPI Handshake Verified (${OWNER_UPI_ID})`);
-        setIsHandshakeActive(false);
-      }, 1200);
-    }, 1500);
-  };
 
 
 
@@ -398,63 +385,7 @@ export function PaymentModal({
                 </div>
               </div>
 
-              {/* TEST & DEMO ACTION BUTTON (For testing signal receipt) */}
-              {handshakeState === 'listening' && (
-                <div
-                  style={{
-                    backgroundColor: '#ecfdf5',
-                    border: '1.5px dashed #059669',
-                    padding: '12px',
-                    borderRadius: '14px',
-                    marginBottom: '14px'
-                  }}
-                >
-                  <span
-                    style={{
-                      display: 'block',
-                      fontSize: '11px',
-                      fontWeight: 800,
-                      color: '#047857',
-                      marginBottom: '8px'
-                    }}
-                  >
-                    🧪 TESTING & VERIFICATION CONTROL
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleTriggerAutomatedSignal}
-                    style={{
-                      width: '100%',
-                      padding: '11px 16px',
-                      borderRadius: '10px',
-                      border: 'none',
-                      backgroundColor: '#059669',
-                      color: '#ffffff',
-                      fontSize: '12.5px',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'
-                    }}
-                  >
-                    <Zap size={15} />
-                    <span>⚡ Simulate Automated UPI Signal (Test Mode)</span>
-                  </button>
-                  <span
-                    style={{
-                      display: 'block',
-                      fontSize: '10.5px',
-                      color: '#64748b',
-                      marginTop: '6px'
-                    }}
-                  >
-                    The timer will continue running. Click above to verify bank settlement signal after completing payment in your UPI app.
-                  </span>
-                </div>
-              )}
+
 
               {/* Retry button if expired */}
               {handshakeState === 'expired' && (
