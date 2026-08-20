@@ -8,16 +8,7 @@ export function BackToTop() {
 
   const totalItems = Object.values(cart).reduce((sum, count) => sum + count, 0);
 
-  const isModalActive = Boolean(
-    isLoginOpen ||
-    (typeof document !== 'undefined' &&
-      (document.querySelector('.qty-sheet-backdrop') ||
-        document.querySelector('.modal-overlay') ||
-        document.querySelector('.drawer-backdrop.active') ||
-        document.querySelector('.login-modal-wrapper.active')))
-  );
-
-  if (!isVisible || isModalActive) return null;
+  if (!isVisible || isLoginOpen) return null;
 
   useEffect(() => {
     const handleScroll = () => {
