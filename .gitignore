@@ -26,3 +26,6 @@ playwright-report
 *.njsproj
 *.sln
 *.sw?
+
+# Documentation & Codebase Explanation
+CODEBASE_EXPLANATION.md
