@@ -33,6 +33,8 @@ const INSTRUCTION_OPTIONS = [
 
 export function CartPage({ onOpenMap }: CartPageProps) {
   const {
+    cart,
+    customerCatalog,
     removeFromCart,
     addToCart,
     clearCart,
@@ -315,14 +317,76 @@ export function CartPage({ onOpenMap }: CartPageProps) {
             </div>
           </div>
 
-          <div className="gstin-card-banner">
-            <div className="gstin-icon-box">%</div>
-            <div className="gstin-text-col">
-              <span className="gstin-title">Add GSTIN</span>
-              <span className="gstin-subtext">Claim GST input credit up to 18% on your order</span>
+          {/* SS2 Horizontal Recommended Products Carousel */}
+          {customerCatalog.length > 0 && (
+            <div className="related-carousel-section cart-page-carousel">
+              <div className="related-carousel-header">
+                <h3>People also bought</h3>
+                <span className="related-sub-text">Popular additions to your cart</span>
+              </div>
+
+              <div className="related-carousel-scroll">
+                {customerCatalog
+                  .filter((item) => !(cart[item.id] > 0))
+                  .slice(0, 12)
+                  .map((relItem) => {
+                    const relPrice = relItem.price;
+                    const relQty = cart[relItem.id] || 0;
+                    const relIsEmoji = !relItem.image.startsWith('http') && !relItem.image.startsWith('/');
+                    const relHasMulti = Array.isArray(relItem.availableVariants) && relItem.availableVariants.length > 1;
+
+                    return (
+                      <div key={relItem.id} className="ss2-carousel-card">
+                        <div className="ss2-card-img-wrap">
+                          {relItem.dietaryType === 'veg' && (
+                            <div className="ss2-veg-icon">
+                              <span className="veg-dot" />
+                            </div>
+                          )}
+                          {relIsEmoji ? (
+                            <span className="ss2-card-emoji">{relItem.image}</span>
+                          ) : (
+                            <img src={relItem.image} alt={relItem.name} className="ss2-card-img" />
+                          )}
+                        </div>
+
+                        <div className="ss2-card-mid-row">
+                          <span className="ss2-card-weight">{relItem.weight}</span>
+                          
+                          {relItem.inStock && (
+                            <div>
+                              {relQty === 0 ? (
+                                <button
+                                  type="button"
+                                  className="ss2-add-btn"
+                                  onClick={() => addToCart(relItem.id, relItem.weight)}
+                                >
+                                  ADD
+                                  {relHasMulti && <span className="options-badge">{relItem.availableVariants!.length} options</span>}
+                                </button>
+                              ) : (
+                                <div className="ss2-qty-stepper">
+                                  <button type="button" onClick={() => removeFromCart(relItem.id, relItem.weight)}>
+                                    <Minus size={11} strokeWidth={3} />
+                                  </button>
+                                  <span>{relQty}</span>
+                                  <button type="button" onClick={() => addToCart(relItem.id, relItem.weight)}>
+                                    <Plus size={11} strokeWidth={3} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="ss2-card-price">₹{relPrice}</div>
+                        <h4 className="ss2-card-title">{relItem.name}</h4>
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
-            <ChevronRight size={18} color="#64748b" />
-          </div>
+          )}
 
           <div className="cart-section-box">
             <h2 className="cart-section-title">Delivery instructions</h2>

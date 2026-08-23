@@ -3,7 +3,8 @@ import { useApp } from '../context/AppContext';
 import { FOOD_SUBDIVISIONS as FOOD_SUBS, HYGIENE_SUBDIVISIONS as HYG_SUBS } from '../lib/constants';
 import { stopOwnerRingingAlarm } from '../lib/sound';
 import type { OrderStatus, Product } from '../types';
-import { Plus, Edit, Trash2, Package, Truck, Save, User, VolumeX, Bell } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Truck, Save, User, VolumeX, Bell, Upload, CheckCircle2 } from 'lucide-react';
+import { compressImageFile } from '../lib/imageCompressor';
 
 export function OwnerDashboard() {
   const {
@@ -46,8 +47,26 @@ export function OwnerDashboard() {
   const [handlingFee, setHandlingFee] = useState('');
   const [variantsText, setVariantsText] = useState('');
 
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [compactStats, setCompactStats] = useState<{ origKb: number; compKb: number } | null>(null);
+
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
+
+  const handleDeviceImageUpload = async (file: File) => {
+    if (!file) return;
+    try {
+      setIsCompressing(true);
+      const res = await compressImageFile(file, 800, 800, 0.75);
+      setImage(res.dataUrl);
+      setCompactStats({ origKb: res.originalSizeKb, compKb: res.compressedSizeKb });
+    } catch (err) {
+      console.error('Image compression failed:', err);
+      setFormError('Failed to process device image file.');
+    } finally {
+      setIsCompressing(false);
+    }
+  };
 
   const handleSaveThreshold = (e: FormEvent) => {
     e.preventDefault();
@@ -523,15 +542,42 @@ export function OwnerDashboard() {
 
               <div className="form-row-2">
                 <div className="input-group">
-                  <label className="input-label">Emoji / Pic URL *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Emoji (e.g. 🍎) or URL"
-                    value={image}
-                    onChange={(e) => setImage(e.target.value)}
-                    required
-                  />
+                  <label className="input-label">Image Source (Emoji / URL / Device Upload) *</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Emoji (e.g. 🍎), URL or compressed data"
+                      value={image}
+                      onChange={(e) => {
+                        setImage(e.target.value);
+                        setCompactStats(null);
+                      }}
+                      required
+                      style={{ flex: 1 }}
+                    />
+                    <label className="device-upload-btn" title="Upload from Phone/Device memory (JPG, PNG, WEBP)">
+                      <Upload size={14} />
+                      <span>{isCompressing ? 'Compacting...' : 'Device File'}</span>
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/webp, image/jpg"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleDeviceImageUpload(file);
+                        }}
+                      />
+                    </label>
+                  </div>
+                  {compactStats && (
+                    <div className="compact-stats-badge">
+                      <CheckCircle2 size={12} color="#16a34a" />
+                      <span>
+                        Compacted: {compactStats.origKb} KB ➔ <strong>{compactStats.compKb} KB</strong> (Ultra Fast)
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="input-group">

@@ -13,6 +13,9 @@ import { MaintenancePage } from './components/MaintenancePage';
 import { CartPage } from './components/CartPage';
 import { MagicBottomNav } from './components/MagicBottomNav';
 import { BackToTop } from './components/BackToTop';
+import { ProfileMenuPopover } from './components/ProfileMenuPopover';
+import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
+import { CookieBanner } from './components/CookieBanner';
 import { useToast } from './hooks/useToast';
 import { startOwnerRingingAlarm, stopOwnerRingingAlarm, showNotification } from './lib/sound';
 import { ArrowRight } from 'lucide-react';
@@ -24,6 +27,8 @@ function MainLayout() {
   const [isMapOpen, setMapOpen] = useState(false);
   const [isPWAOpen, setPWAOpen] = useState(false);
   const [isDevLogsOpen, setDevLogsOpen] = useState(false);
+  const [isProfileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [isPrivacyModalOpen, setPrivacyModalOpen] = useState(false);
 
   const { toasts, addToast, dismissToast } = useToast();
   const [lastOrderStatus, setLastOrderStatus] = useState<string | null>(null);
@@ -169,7 +174,11 @@ function MainLayout() {
         <CartPage onOpenMap={() => setMapOpen(true)} />
       ) : (
         <>
-          <Navbar onOpenPWA={() => setPWAOpen(true)} onOpenMap={() => setMapOpen(true)} />
+          <Navbar
+            onOpenPWA={() => setPWAOpen(true)}
+            onOpenMap={() => setMapOpen(true)}
+            onOpenProfileMenu={() => setProfileMenuOpen(true)}
+          />
 
           <div className="main-content-scroll">
             <Catalog />
@@ -181,7 +190,7 @@ function MainLayout() {
               className="active-order-banner"
               style={{ bottom: totalItems > 0 ? '84px' : '20px' }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: '20px' }}>🛵</span>
                 <div>
                   <h4 style={{ fontSize: '12px', fontWeight: 800, margin: 0 }}>Active Delivery in Progress</h4>
@@ -198,13 +207,24 @@ function MainLayout() {
         </>
       )}
 
-      {currentView !== 'admin' && <MagicBottomNav isModalOpen={isMapOpen || isPWAOpen || isDevLogsOpen} />}
+      {currentView !== 'admin' && (
+        <MagicBottomNav isModalOpen={isMapOpen || isPWAOpen || isDevLogsOpen || isProfileMenuOpen || isPrivacyModalOpen} />
+      )}
 
       <BackToTop />
       <LoginModal />
       <MapPickerModal isOpen={isMapOpen} onClose={() => setMapOpen(false)} onSelectAddress={handleSelectMapAddress} />
       <PWAInstallModal isOpen={isPWAOpen} onClose={() => setPWAOpen(false)} />
       <DevLogsModal isOpen={isDevLogsOpen} onClose={() => setDevLogsOpen(false)} />
+
+      {/* Modern Additions */}
+      <ProfileMenuPopover
+        isOpen={isProfileMenuOpen}
+        onClose={() => setProfileMenuOpen(false)}
+        onOpenPrivacyPolicy={() => setPrivacyModalOpen(true)}
+      />
+      <PrivacyPolicyModal isOpen={isPrivacyModalOpen} onClose={() => setPrivacyModalOpen(false)} />
+      <CookieBanner />
     </div>
   );
 }

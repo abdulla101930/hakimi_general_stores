@@ -3,29 +3,97 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    
+    <!-- Primary Meta Tags -->
+    <title>Hakimi General Store Ratlam - Instant 10-Min Grocery & Hygiene Delivery</title>
+    <meta name="title" content="Hakimi General Store Ratlam - Instant 10-Min Grocery & Hygiene Delivery" />
+    <meta name="description" content="Hakimi General Store in Ratlam provides instant 10-minute grocery, fresh fruits, vegetables, dairy, household & personal care product delivery right to your doorstep." />
+    <meta name="keywords" content="Hakimi General Store, Ratlam grocery, Ratlam supermarket, online grocery Ratlam, instant grocery delivery, hygiene products Ratlam" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://hakimigeneralstore.com/" />
+
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://hakimigeneralstore.com/" />
+    <meta property="og:title" content="Hakimi General Store Ratlam - Instant Grocery & Daily Essentials" />
+    <meta property="og:description" content="Order fresh groceries, daily staples & personal care items in Ratlam with instant 10-minute delivery." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:site_name" content="Hakimi General Store" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://hakimigeneralstore.com/" />
+    <meta name="twitter:title" content="Hakimi General Store Ratlam" />
+    <meta name="twitter:description" content="Instant 10-minute grocery & daily essentials delivery in Ratlam." />
+    <meta name="twitter:image" content="/og-image.png" />
+
+    <!-- App Favicons & Icons -->
     <link rel="icon" type="image/png" href="logo.png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <link rel="manifest" href="manifest.webmanifest" />
     <meta name="theme-color" content="#2563eb" />
-    <meta name="description" content="Hakimi General Store Ratlam - Instant grocery & hygiene delivery app." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <title>Hakimi General Store Ratlam</title>
   </head>
   <body>
     <div id="root"></div>
     <noscript>This app needs JavaScript enabled to run.</noscript>
 
-    <div id="boot-splash" style="position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#0f172a;transition:opacity .25s ease">
-      <div style="width:56px;height:56px;border-radius:16px;background:#2563eb;display:flex;align-items:center;justify-content:center;font-size:30px">🛒</div>
-      <div style="font-size:16px;font-weight:600">Hakimi General Store</div>
-      <div id="boot-status" style="font-size:12px;color:#64748b">Loading…</div>
+    <!-- SS3 Glass & Claymorphism Boot Loading Screen -->
+    <div id="boot-splash" style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #f0f6ff 0%, #e2e8f0 100%);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:20px;transition:opacity 0.3s ease">
+      <div style="width:100%;max-width:340px;padding:36px 24px;border-radius:28px;background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:inset 0 2px 4px rgba(255,255,255,0.9), 0 20px 40px rgba(15,23,42,0.08);border:1px solid rgba(255,255,255,0.7);display:flex;flex-direction:column;align-items:center;text-align:center;gap:18px">
+        
+        <!-- Animated Ring Spinner with HGS Logo -->
+        <div style="position:relative;width:80px;height:80px;display:flex;align-items:center;justify-content:center">
+          <div style="position:absolute;inset:0;border-radius:50%;border:3px solid transparent;border-top-color:#0284c7;border-right-color:#38bdf8;animation:hgs-spin 1.2s cubic-bezier(0.68,-0.55,0.27,1.55) infinite"></div>
+          <div style="position:absolute;inset:6px;border-radius:50%;background:rgba(238,242,255,0.7);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#0284c7;letter-spacing:1px;box-shadow:inset 0 1px 3px rgba(0,0,0,0.05)">
+            HGS
+          </div>
+          <!-- 3 pulse dots -->
+          <div style="position:absolute;top:-4px;display:flex;gap:4px">
+            <span style="width:6px;height:6px;border-radius:50%;background:#38bdf8;animation:hgs-pulse 1.4s infinite 0s"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#0284c7;animation:hgs-pulse 1.4s infinite 0.2s"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#0369a1;animation:hgs-pulse 1.4s infinite 0.4s"></span>
+          </div>
+        </div>
+
+        <div style="margin-top:6px">
+          <h2 style="font-size:18px;font-weight:900;color:#0f2b5c;letter-spacing:0.5px;margin:0 0 4px 0;text-transform:uppercase">
+            Hakimi General Store
+          </h2>
+          <span style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:2px;text-transform:uppercase">
+            Ratlam, India
+          </span>
+        </div>
+
+        <div style="margin-top:8px">
+          <p id="boot-status" style="font-size:13px;font-style:italic;color:#475569;margin:0">
+            Synchronizing your pantry…
+          </p>
+        </div>
+
+        <div style="margin-top:12px;display:inline-flex;align-items:center;gap:6px;background:rgba(241,245,249,0.8);padding:6px 14px;border-radius:20px;font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;text-transform:uppercase">
+          <span>🔒</span>
+          <span>SECURE SYNC</span>
+        </div>
+
+      </div>
     </div>
+
+    <style>
+      @keyframes hgs-spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes hgs-pulse {
+        0%, 100% { transform: scale(0.8); opacity: 0.5; }
+        50% { transform: scale(1.3); opacity: 1; }
+      }
+    </style>
 
     <script type="module" src="/src/main.tsx"></script>
     <script>
       (function () {
-        // Boot safety net: if the app shell hasn't mounted within ~12s, offer recovery.
         var bootStarted = Date.now();
         var hideSplash = function () {
           var s = document.getElementById('boot-splash');
@@ -58,10 +126,12 @@
         setTimeout(function () {
           var root = document.getElementById('root');
           if (!root || root.children.length === 0) {
-            setBootStatus('Taking too long. Tap to retry.');
+            setBootStatus('Taking longer than usual. Tap to retry.');
             var el = document.getElementById('boot-status');
-            el.style.cursor = 'pointer';
-            el.onclick = function () { window.location.reload(); };
+            if (el) {
+              el.style.cursor = 'pointer';
+              el.onclick = function () { window.location.reload(); };
+            }
           }
         }, 12000);
         void bootStarted;

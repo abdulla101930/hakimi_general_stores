@@ -347,8 +347,13 @@ export function LoginModal() {
             </div>
 
             <form onSubmit={handleSubmit} className="login-form-body">
-              {/* Error Alert */}
-              {errorMsg && <div className="login-alert-box error">{errorMsg}</div>}
+              {/* Error Alert with Custom Micro-Shake & Clay Error Badge */}
+              {errorMsg && (
+                <div className="login-alert-box error form-error-shake">
+                  <span className="form-error-badge">⚠️ ERROR</span>
+                  <span>{errorMsg}</span>
+                </div>
+              )}
 
               {/* Success / Detection Banner */}
               {successMsg && <div className="login-alert-box success">{successMsg}</div>}

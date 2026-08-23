@@ -5,10 +5,11 @@ import { User, Download, ChevronDown, MapPin } from 'lucide-react';
 interface NavbarProps {
   onOpenPWA?: () => void;
   onOpenMap?: () => void;
+  onOpenProfileMenu?: () => void;
 }
 
-export function Navbar({ onOpenPWA, onOpenMap }: NavbarProps) {
-  const { user, role, logout, setLoginOpen, currentView, setView, selectedAddress } = useApp();
+export function Navbar({ onOpenPWA, onOpenMap, onOpenProfileMenu }: NavbarProps) {
+  const { user, setLoginOpen, selectedAddress } = useApp();
 
   const { timeText, distanceText } = calculateDeliveryMetrics(selectedAddress?.gps, selectedAddress?.details);
 
@@ -59,17 +60,15 @@ export function Navbar({ onOpenPWA, onOpenMap }: NavbarProps) {
               type="button"
               className="blinkit-user-avatar-btn"
               onClick={() => {
-                if (user) {
-                  if (role === 'owner') {
-                    setView(currentView === 'admin' ? 'catalog' : 'admin');
-                  } else {
-                    logout();
-                  }
+                if (user && onOpenProfileMenu) {
+                  onOpenProfileMenu();
+                } else if (onOpenProfileMenu) {
+                  onOpenProfileMenu();
                 } else {
                   setLoginOpen(true);
                 }
               }}
-              title={user ? (role === 'owner' ? 'Owner Portal' : 'Logout') : 'Login'}
+              title="Profile & Menu"
             >
               <User size={18} />
             </button>
