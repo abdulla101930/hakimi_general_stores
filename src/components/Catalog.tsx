@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { FOOD_SUBDIVISIONS, HYGIENE_SUBDIVISIONS } from '../lib/constants';
 import { ProductCard } from './ProductCard';
-import { Search, ChevronRight, X } from 'lucide-react';
+import { Search, ChevronRight, X, CheckCircle2, ShoppingBag, Sparkles } from 'lucide-react';
 
 export function Catalog() {
   const { customerCatalog: catalog } = useApp();
@@ -48,76 +48,86 @@ export function Catalog() {
         </div>
       </div>
 
-      <div className="main-category-dual-cards">
+      <div className="main-category-hero-grid">
+        {/* Food Store Banner Card */}
         <div
-          className={`category-theme-card food-card ${selectedMainCat === 'Food' ? 'selected' : ''}`}
+          className={`hero-category-banner food-hero-banner ${selectedMainCat === 'Food' ? 'active-selected' : ''}`}
           onClick={() => {
             setSelectedMainCat('Food');
             setSelectedSubCat('All');
           }}
           role="button"
+          tabIndex={0}
         >
-          <div className="card-badge">Main Category</div>
-          <div className="card-content-left">
-            <div className="category-real-img-row">
-              <img
-                src="https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=120&q=80"
-                alt="Fresh Apple"
-                className="category-real-img-thumb"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=120&q=80"
-                alt="Fresh Bread"
-                className="category-real-img-thumb"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?auto=format&fit=crop&w=120&q=80"
-                alt="Fresh Broccoli"
-                className="category-real-img-thumb"
-              />
+          {selectedMainCat === 'Food' && (
+            <div className="active-category-pill food-active-pill">
+              <CheckCircle2 size={12} color="#ffffff" />
+              <span>SELECTED</span>
             </div>
-            <h2 className="card-title">Food Store</h2>
-            <p className="card-subtitle">Fresh Groceries, Fruits, Dairy & Staples</p>
+          )}
+
+          <div className="hero-banner-content">
+            <span className="hero-banner-tag food-tag">
+              <ShoppingBag size={11} /> GROCERIES & STAPLES
+            </span>
+            <h2 className="hero-banner-title">Food Store</h2>
+            <p className="hero-banner-sub">Fresh Fruits, Veggies, Dairy & Bakery</p>
+            <div className="hero-banner-cta food-cta">
+              <span>Explore Food</span>
+              <ChevronRight size={14} className="cta-arrow" />
+            </div>
           </div>
-          <div className="card-action-btn">
-            <span>Shop Food</span>
-            <ChevronRight size={16} />
+
+          <div className="hero-banner-visual-wrapper">
+            <div className="hero-img-card-frame">
+              <img
+                src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80"
+                alt="Fresh Groceries"
+                className="hero-banner-photo"
+              />
+              <div className="hero-img-badge food-img-badge">10 Min</div>
+            </div>
           </div>
         </div>
 
+        {/* Hygiene & Care Banner Card */}
         <div
-          className={`category-theme-card hygiene-card ${selectedMainCat === 'Hygiene' ? 'selected' : ''}`}
+          className={`hero-category-banner hygiene-hero-banner ${selectedMainCat === 'Hygiene' ? 'active-selected' : ''}`}
           onClick={() => {
             setSelectedMainCat('Hygiene');
             setSelectedSubCat('All');
           }}
           role="button"
+          tabIndex={0}
         >
-          <div className="card-badge teal-badge">Personal Care</div>
-          <div className="card-content-left">
-            <div className="category-real-img-row">
-              <img
-                src="https://images.unsplash.com/photo-1607006482602-76ca9bd7080f?auto=format&fit=crop&w=120&q=80"
-                alt="Organic Soap"
-                className="category-real-img-thumb"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=120&q=80"
-                alt="Skincare Lotion"
-                className="category-real-img-thumb"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=120&q=80"
-                alt="Dental Care"
-                className="category-real-img-thumb"
-              />
+          {selectedMainCat === 'Hygiene' && (
+            <div className="active-category-pill hygiene-active-pill">
+              <CheckCircle2 size={12} color="#ffffff" />
+              <span>SELECTED</span>
             </div>
-            <h2 className="card-title">Hygiene & Care</h2>
-            <p className="card-subtitle">Bath, Body, Skincare & Cleaning</p>
+          )}
+
+          <div className="hero-banner-content">
+            <span className="hero-banner-tag hygiene-tag">
+              <Sparkles size={11} /> PERSONAL CARE
+            </span>
+            <h2 className="hero-banner-title">Hygiene & Care</h2>
+            <p className="hero-banner-sub">Bath, Body, Skincare & Cleaning</p>
+            <div className="hero-banner-cta hygiene-cta">
+              <span>Explore Care</span>
+              <ChevronRight size={14} className="cta-arrow" />
+            </div>
           </div>
-          <div className="card-action-btn teal-btn">
-            <span>Shop Care</span>
-            <ChevronRight size={16} />
+
+          <div className="hero-banner-visual-wrapper">
+            <div className="hero-img-card-frame">
+              <img
+                src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&q=80"
+                alt="Personal Care"
+                className="hero-banner-photo"
+              />
+              <div className="hero-img-badge hygiene-img-badge">Top Care</div>
+            </div>
           </div>
         </div>
       </div>
