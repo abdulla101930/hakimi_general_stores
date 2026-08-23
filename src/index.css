@@ -907,8 +907,9 @@ a {
   height: 100%;
   min-width: 0;
   min-height: 0;
-  object-fit: cover;
-  transform: scale(1.04);
+  object-fit: contain;
+  padding: 4px;
+  box-sizing: border-box;
 }
 
 .product-out-of-stock {

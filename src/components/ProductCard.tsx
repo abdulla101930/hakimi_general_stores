@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { cartKeyOf, getProductOriginalPrice, getProductPrice } from '../lib/cart';
+import { cartKeyOf, getProductOriginalPrice, getProductPrice, isImageSrc } from '../lib/cart';
 import type { Product } from '../types';
 import { QtyPickerSheet } from './QtyPickerSheet';
 import { ProductPreviewModal } from './ProductPreviewModal';
@@ -31,7 +31,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const quantity = cart[cartKeyOf(product.id, selectedWeight)] || 0;
 
-  const isEmoji = !product.image.startsWith('http') && !product.image.startsWith('/');
+  const isEmoji = !isImageSrc(product.image);
   const isHygiene = product.mainCategory === 'Hygiene';
 
   const handleAdd = (e: React.MouseEvent) => {

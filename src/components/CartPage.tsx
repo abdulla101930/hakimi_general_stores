@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useApp } from '../context/AppContext';
 import { computeBill, computeCouponSavings } from '../lib/billing';
 import { sendCheckoutOrderToWhatsApp } from '../lib/whatsapp';
+import { isImageSrc } from '../lib/cart';
 import {
   ArrowLeft,
   Trash2,
@@ -186,7 +187,7 @@ export function CartPage({ onOpenMap }: CartPageProps) {
               {cartItems.map(({ product, weight, quantity, price }) => (
                 <div key={`${product.id}::${weight}`} className="cart-item-row-ss5">
                   <div className="cart-item-thumb">
-                    {product.image.startsWith('http') || product.image.startsWith('/') ? (
+                    {isImageSrc(product.image) ? (
                       <img src={product.image} alt={product.name} />
                     ) : (
                       <span>{product.image}</span>
@@ -332,7 +333,7 @@ export function CartPage({ onOpenMap }: CartPageProps) {
                   .map((relItem) => {
                     const relPrice = relItem.price;
                     const relQty = cart[relItem.id] || 0;
-                    const relIsEmoji = !relItem.image.startsWith('http') && !relItem.image.startsWith('/');
+                    const relIsEmoji = !isImageSrc(relItem.image);
                     const relHasMulti = Array.isArray(relItem.availableVariants) && relItem.availableVariants.length > 1;
 
                     return (

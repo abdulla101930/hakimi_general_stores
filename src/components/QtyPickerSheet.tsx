@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
-import { cartKeyOf, getProductOriginalPrice, getProductPrice } from '../lib/cart';
+import { cartKeyOf, getProductOriginalPrice, getProductPrice, isImageSrc } from '../lib/cart';
 import type { Product } from '../types';
 import { Minus, Plus, X } from 'lucide-react';
 
@@ -20,7 +20,7 @@ export function QtyPickerSheet({ product, open, onClose }: QtyPickerSheetProps) 
       ? product.availableVariants
       : [{ weight: product.weight, price: product.price, originalPrice: product.originalPrice }];
 
-  const isEmoji = !product.image.startsWith('http') && !product.image.startsWith('/');
+  const isEmoji = !isImageSrc(product.image);
   const totalQty = variants.reduce((sum, v) => sum + (cart[cartKeyOf(product.id, v.weight)] || 0), 0);
 
   return createPortal(

@@ -53,3 +53,17 @@ export function resolveCartLines(cart: Record<string, number>, catalog: Product[
   });
   return [...merged.values()];
 }
+
+export function isImageSrc(img: string | undefined | null): boolean {
+  if (!img) return false;
+  const lower = img.trim().toLowerCase();
+  return (
+    lower.startsWith('http://') ||
+    lower.startsWith('https://') ||
+    lower.startsWith('data:') ||
+    lower.startsWith('/') ||
+    lower.startsWith('./') ||
+    lower.startsWith('blob:')
+  );
+}
+

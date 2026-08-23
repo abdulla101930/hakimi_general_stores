@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { cartKeyOf, getProductOriginalPrice, getProductPrice } from '../lib/cart';
+import { cartKeyOf, getProductOriginalPrice, getProductPrice, isImageSrc } from '../lib/cart';
 import type { Product } from '../types';
 import { X, Plus, Minus, Heart, ShoppingBag } from 'lucide-react';
 
@@ -36,7 +36,7 @@ export function ProductPreviewModal({ product, isOpen, onClose, onSelectProduct 
   const variantsList = hasVariants ? product.availableVariants! : [{ weight: product.weight, price: product.price }];
 
   const quantity = cart[cartKeyOf(product.id, selectedWeight || product.weight)] || 0;
-  const isEmoji = !product.image.startsWith('http') && !product.image.startsWith('/');
+  const isEmoji = !isImageSrc(product.image);
 
   // Find recommendations from the same main/sub category (SS2 "People also bought")
   const relatedProducts = customerCatalog.filter(
@@ -160,7 +160,7 @@ export function ProductPreviewModal({ product, isOpen, onClose, onSelectProduct 
                 {relatedProducts.map((relItem) => {
                   const relPrice = relItem.price;
                   const relQty = cart[cartKeyOf(relItem.id, relItem.weight)] || 0;
-                  const relIsEmoji = !relItem.image.startsWith('http') && !relItem.image.startsWith('/');
+                  const relIsEmoji = !isImageSrc(relItem.image);
                   const relHasMulti = Array.isArray(relItem.availableVariants) && relItem.availableVariants.length > 1;
 
                   return (

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useApp } from '../context/AppContext';
 import { FOOD_SUBDIVISIONS as FOOD_SUBS, HYGIENE_SUBDIVISIONS as HYG_SUBS } from '../lib/constants';
 import { stopOwnerRingingAlarm } from '../lib/sound';
+import { isImageSrc } from '../lib/cart';
 import type { OrderStatus, Product } from '../types';
 import { Plus, Edit, Trash2, Package, Truck, Save, User, VolumeX, Bell, Upload, CheckCircle2 } from 'lucide-react';
 import { compressImageFile } from '../lib/imageCompressor';
@@ -633,7 +634,7 @@ export function OwnerDashboard() {
                         className="admin-product-img"
                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}
                       >
-                        {product.image.startsWith('http') ? (
+                        {isImageSrc(product.image) ? (
                           <img src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         ) : (
                           product.image
