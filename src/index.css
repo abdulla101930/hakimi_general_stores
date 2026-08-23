@@ -619,6 +619,27 @@ a {
   font-size: 22px;
 }
 
+.category-real-img-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+
+.category-real-img-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.12);
+  transition: transform 0.2s ease;
+}
+
+.category-theme-card:hover .category-real-img-thumb {
+  transform: scale(1.08);
+}
+
 .card-title {
   font-size: 15px;
   font-weight: 900;

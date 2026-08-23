@@ -59,7 +59,23 @@ export function Catalog() {
         >
           <div className="card-badge">Main Category</div>
           <div className="card-content-left">
-            <span className="card-emoji">🍎 🍞 🥦</span>
+            <div className="category-real-img-row">
+              <img
+                src="https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=120&q=80"
+                alt="Fresh Apple"
+                className="category-real-img-thumb"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=120&q=80"
+                alt="Fresh Bread"
+                className="category-real-img-thumb"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?auto=format&fit=crop&w=120&q=80"
+                alt="Fresh Broccoli"
+                className="category-real-img-thumb"
+              />
+            </div>
             <h2 className="card-title">Food Store</h2>
             <p className="card-subtitle">Fresh Groceries, Fruits, Dairy & Staples</p>
           </div>
@@ -79,7 +95,23 @@ export function Catalog() {
         >
           <div className="card-badge teal-badge">Personal Care</div>
           <div className="card-content-left">
-            <span className="card-emoji">🧼 🧴 🪥</span>
+            <div className="category-real-img-row">
+              <img
+                src="https://images.unsplash.com/photo-1607006482602-76ca9bd7080f?auto=format&fit=crop&w=120&q=80"
+                alt="Organic Soap"
+                className="category-real-img-thumb"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=120&q=80"
+                alt="Skincare Lotion"
+                className="category-real-img-thumb"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=120&q=80"
+                alt="Dental Care"
+                className="category-real-img-thumb"
+              />
+            </div>
             <h2 className="card-title">Hygiene & Care</h2>
             <p className="card-subtitle">Bath, Body, Skincare & Cleaning</p>
           </div>
