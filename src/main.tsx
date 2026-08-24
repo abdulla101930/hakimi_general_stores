@@ -24,3 +24,10 @@ createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </StrictMode>
 );
+
+if (typeof window !== 'undefined' && typeof (window as any).__hideBootSplash === 'function') {
+  setTimeout(() => {
+    (window as any).__hideBootSplash?.();
+  }, 100);
+}
+

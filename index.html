@@ -123,17 +123,10 @@
           watcher.observe(document.getElementById('root'), { childList: true });
         }
 
+        // Safety fallback: Hide splash screen after 2.5 seconds maximum no matter what
         setTimeout(function () {
-          var root = document.getElementById('root');
-          if (!root || root.children.length === 0) {
-            setBootStatus('Taking longer than usual. Tap to retry.');
-            var el = document.getElementById('boot-status');
-            if (el) {
-              el.style.cursor = 'pointer';
-              el.onclick = function () { window.location.reload(); };
-            }
-          }
-        }, 12000);
+          hideSplash();
+        }, 2500);
         void bootStarted;
       })();
     </script>
