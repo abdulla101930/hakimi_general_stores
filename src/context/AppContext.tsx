@@ -194,23 +194,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isConfigured) return;
     const settingsRef = doc(db, 'settings', 'store_status');
-    const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
-      if (!docSnap.exists()) return;
-      const data = docSnap.data() as Partial<DeliverySettings> & { isMaintenanceMode?: boolean };
-      if (data.isMaintenanceMode !== undefined) {
-        setIsMaintenanceMode(Boolean(data.isMaintenanceMode));
-        safeJSONStringify('hakimi_maintenance_mode', Boolean(data.isMaintenanceMode));
+    const unsubscribe = onSnapshot(
+      settingsRef,
+      (docSnap) => {
+        if (!docSnap.exists()) return;
+        const data = docSnap.data() as Partial<DeliverySettings> & { isMaintenanceMode?: boolean };
+        if (data.isMaintenanceMode !== undefined) {
+          setIsMaintenanceMode(Boolean(data.isMaintenanceMode));
+          safeJSONStringify('hakimi_maintenance_mode', Boolean(data.isMaintenanceMode));
+        }
+        const partial: Partial<DeliverySettings> = {};
+        if (data.freeDeliveryThreshold !== undefined) partial.freeDeliveryThreshold = data.freeDeliveryThreshold;
+        if (data.deliveryPricingMode !== undefined) partial.deliveryPricingMode = data.deliveryPricingMode;
+        if (data.flatDeliveryCharge !== undefined) partial.flatDeliveryCharge = data.flatDeliveryCharge;
+        if (data.distanceRateMultiplier !== undefined) partial.distanceRateMultiplier = data.distanceRateMultiplier;
+        if (Object.keys(partial).length > 0) {
+          setDeliverySettingsState((prev) => ({ ...prev, ...partial }));
+          persistSettings(partial);
+        }
+      },
+      (error) => {
+        console.warn('[Firestore] store_status snapshot permission/network notice:', error.message);
       }
-      const partial: Partial<DeliverySettings> = {};
-      if (data.freeDeliveryThreshold !== undefined) partial.freeDeliveryThreshold = data.freeDeliveryThreshold;
-      if (data.deliveryPricingMode !== undefined) partial.deliveryPricingMode = data.deliveryPricingMode;
-      if (data.flatDeliveryCharge !== undefined) partial.flatDeliveryCharge = data.flatDeliveryCharge;
-      if (data.distanceRateMultiplier !== undefined) partial.distanceRateMultiplier = data.distanceRateMultiplier;
-      if (Object.keys(partial).length > 0) {
-        setDeliverySettingsState((prev) => ({ ...prev, ...partial }));
-        persistSettings(partial);
-      }
-    });
+    );
     return () => unsubscribe();
   }, []);
 
@@ -254,24 +260,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!isConfigured) {
       return;
     }
-    const unsubscribe = onSnapshot(collection(db, 'products'), (snapshot) => {
-      const productsList: Product[] = [];
-      snapshot.forEach((doc) => {
-        productsList.push({ id: doc.id, ...doc.data() } as Product);
-      });
-      if (productsList.length === 0) {
-        DEFAULT_PRODUCTS.forEach(async (p) => {
-          const { id, ...data } = p;
-          await setDoc(doc(db, 'products', id), data).catch(() => {});
+    const unsubscribe = onSnapshot(
+      collection(db, 'products'),
+      (snapshot) => {
+        const productsList: Product[] = [];
+        snapshot.forEach((doc) => {
+          productsList.push({ id: doc.id, ...doc.data() } as Product);
         });
-      } else {
-        setCatalog((prev) => {
-          const prevJson = JSON.stringify(prev);
-          const nextJson = JSON.stringify(productsList);
-          return prevJson === nextJson ? prev : productsList;
-        });
+        if (productsList.length === 0) {
+          DEFAULT_PRODUCTS.forEach(async (p) => {
+            const { id, ...data } = p;
+            await setDoc(doc(db, 'products', id), data).catch(() => {});
+          });
+        } else {
+          setCatalog((prev) => {
+            const prevJson = JSON.stringify(prev);
+            const nextJson = JSON.stringify(productsList);
+            return prevJson === nextJson ? prev : productsList;
+          });
+        }
+      },
+      (error) => {
+        console.warn('[Firestore] products snapshot permission/network notice:', error.message);
+        const saved = safeJSONParse<Product[] | null>('hakimi_catalog', null);
+        setCatalog(Array.isArray(saved) && saved.length > 0 ? saved : DEFAULT_PRODUCTS);
       }
-    });
+    );
     return () => unsubscribe();
   }, []);
 
@@ -286,18 +300,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setOrders(Array.isArray(saved) ? saved : []);
       return;
     }
-    const unsubscribe = onSnapshot(collection(db, 'orders'), (snapshot) => {
-      const ordersList: Order[] = [];
-      snapshot.forEach((doc) => {
-        ordersList.push(doc.data() as Order);
-      });
-      ordersList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setOrders((prev) => {
-        const prevJson = JSON.stringify(prev);
-        const nextJson = JSON.stringify(ordersList);
-        return prevJson === nextJson ? prev : ordersList;
-      });
-    });
+    const unsubscribe = onSnapshot(
+      collection(db, 'orders'),
+      (snapshot) => {
+        const ordersList: Order[] = [];
+        snapshot.forEach((doc) => {
+          ordersList.push(doc.data() as Order);
+        });
+        ordersList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setOrders((prev) => {
+          const prevJson = JSON.stringify(prev);
+          const nextJson = JSON.stringify(ordersList);
+          return prevJson === nextJson ? prev : ordersList;
+        });
+      },
+      (error) => {
+        console.warn('[Firestore] orders snapshot permission/network notice:', error.message);
+        const saved = safeJSONParse<Order[] | null>('hakimi_orders', null);
+        setOrders(Array.isArray(saved) ? saved : []);
+      }
+    );
     return () => unsubscribe();
   }, []);
 
@@ -328,14 +350,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const unsubscribe = onSnapshot(doc(db, 'orders', activeId), (docSnapshot) => {
-      if (docSnapshot.exists()) {
-        const data = docSnapshot.data() as Order;
-        if (JSON.stringify(data) !== JSON.stringify(activeOrderRef.current)) {
-          setActiveOrder(data);
+    const unsubscribe = onSnapshot(
+      doc(db, 'orders', activeId),
+      (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const data = docSnapshot.data() as Order;
+          if (JSON.stringify(data) !== JSON.stringify(activeOrderRef.current)) {
+            setActiveOrder(data);
+          }
         }
+      },
+      (error) => {
+        console.warn('[Firestore] active order snapshot permission/network notice:', error.message);
       }
-    });
+    );
     return () => unsubscribe();
   }, [activeOrder?.id, activeOrder?.status, orders]);
 
