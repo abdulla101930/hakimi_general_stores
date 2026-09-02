@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { db, isConfigured } from '../lib/firebase';
 import { doc, collection, setDoc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { logOwnerAction } from '../lib/audit';
@@ -310,29 +310,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
     else safeJSONStringify('hakimi_active_order', null);
   }, [activeOrder]);
 
+  const activeOrderRef = useRef(activeOrder);
+  useEffect(() => {
+    activeOrderRef.current = activeOrder;
+  }, [activeOrder]);
+
   // --- Active order realtime listener ---
   useEffect(() => {
-    if (!activeOrder || activeOrder.status === 'delivered') return;
+    const activeId = activeOrder?.id;
+    if (!activeId || activeOrder?.status === 'delivered') return;
 
     if (!isConfigured) {
-      const syncedOrder = orders.find((o) => o.id === activeOrder.id);
-      if (syncedOrder && syncedOrder.status !== activeOrder.status) {
+      const syncedOrder = orders.find((o) => o.id === activeId);
+      if (syncedOrder && syncedOrder.status !== activeOrderRef.current?.status) {
         setActiveOrder(syncedOrder);
       }
       return;
     }
 
-    const unsubscribe = onSnapshot(doc(db, 'orders', activeOrder.id), (docSnapshot) => {
+    const unsubscribe = onSnapshot(doc(db, 'orders', activeId), (docSnapshot) => {
       if (docSnapshot.exists()) {
         const data = docSnapshot.data() as Order;
-        if (JSON.stringify(data) !== JSON.stringify(activeOrder)) {
+        if (JSON.stringify(data) !== JSON.stringify(activeOrderRef.current)) {
           setActiveOrder(data);
         }
       }
     });
     return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeOrder?.id]);
+  }, [activeOrder?.id, activeOrder?.status, orders]);
 
   // --- Cart persistence ---
   useEffect(() => {

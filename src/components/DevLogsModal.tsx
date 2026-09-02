@@ -52,11 +52,12 @@ export function DevLogsModal({ isOpen, onClose }: DevLogsModalProps) {
 
   const filteredLogs = logs.filter((log) => {
     const matchesAction = filterAction === 'ALL' || log.action === filterAction;
+    const detailsStr = log.details ? JSON.stringify(log.details).toLowerCase() : '';
     const matchesSearch =
       searchQuery.trim() === '' ||
-      log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.actor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      JSON.stringify(log.details).toLowerCase().includes(searchQuery.toLowerCase());
+      (log.action && log.action.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (log.actor && log.actor.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      detailsStr.includes(searchQuery.toLowerCase());
     return matchesAction && matchesSearch;
   });
 
@@ -71,11 +72,38 @@ export function DevLogsModal({ isOpen, onClose }: DevLogsModalProps) {
       case 'ORDER_STATUS_CHANGED':
         return '#f59e0b';
       case 'DELIVERY_THRESHOLD_UPDATED':
+      case 'DELIVERY_SETTINGS_UPDATED':
         return '#8b5cf6';
+      case 'MAINTENANCE_MODE_TOGGLED':
+        return '#06b6d4';
       case 'OWNER_LOGIN':
         return '#ec4899';
       default:
         return '#6b7280';
+    }
+  };
+
+  const renderLogSummary = (log: AuditLogEntry) => {
+    const d = (log.details || {}) as Record<string, any>;
+    switch (log.action) {
+      case 'PRODUCT_ADDED':
+        return `Added "${d.name || 'product'}" (₹${d.price ?? 0}) to ${d.mainCategory || 'Catalog'}`;
+      case 'PRODUCT_UPDATED':
+        return `Updated product: ${d.name || d.id || 'unknown'}`;
+      case 'PRODUCT_DELETED':
+        return `Deleted product: "${d.name || d.id || 'unknown'}"`;
+      case 'ORDER_STATUS_CHANGED':
+        return `Order ${d.orderId || ''} status changed from "${d.oldStatus || 'unknown'}" ➔ "${d.newStatus || ''}"`;
+      case 'DELIVERY_THRESHOLD_UPDATED':
+        return `Free delivery threshold changed to ₹${d.newThreshold ?? 0}`;
+      case 'DELIVERY_SETTINGS_UPDATED':
+        return `Delivery settings updated: ${JSON.stringify(d)}`;
+      case 'MAINTENANCE_MODE_TOGGLED':
+        return `Store maintenance mode ${d.enabled ? 'ENABLED 🔴' : 'DISABLED 🟢'}`;
+      case 'OWNER_LOGIN':
+        return `Merchant signed in from ${d.phone || 'phone'}`;
+      default:
+        return `Action: ${log.action}`;
     }
   };
 
@@ -130,6 +158,8 @@ export function DevLogsModal({ isOpen, onClose }: DevLogsModalProps) {
               <option value="PRODUCT_DELETED">Product Deleted</option>
               <option value="ORDER_STATUS_CHANGED">Order Status Changed</option>
               <option value="DELIVERY_THRESHOLD_UPDATED">Threshold Updated</option>
+              <option value="DELIVERY_SETTINGS_UPDATED">Delivery Settings Updated</option>
+              <option value="MAINTENANCE_MODE_TOGGLED">Maintenance Toggled</option>
               <option value="OWNER_LOGIN">Owner Login</option>
             </select>
           </div>
@@ -188,16 +218,10 @@ export function DevLogsModal({ isOpen, onClose }: DevLogsModalProps) {
                   </div>
 
                   <div className="devlogs-summary">
-                    {log.action === 'PRODUCT_ADDED' && `Added "${log.details.name}" (₹${log.details.price}) to ${log.details.mainCategory || 'Catalog'}`}
-                    {log.action === 'PRODUCT_UPDATED' && `Updated product ID: ${log.details.id || log.details.name}`}
-                    {log.action === 'PRODUCT_DELETED' && `Deleted product: "${log.details.name || log.details.id}"`}
-                    {log.action === 'ORDER_STATUS_CHANGED' &&
-                      `Order ${log.details.orderId} status changed from "${log.details.oldStatus || 'unknown'}" ➔ "${log.details.newStatus}"`}
-                    {log.action === 'DELIVERY_THRESHOLD_UPDATED' && `Free delivery threshold changed to ₹${log.details.newThreshold}`}
-                    {log.action === 'OWNER_LOGIN' && `Merchant signed in from ${log.details.phone}`}
+                    {renderLogSummary(log)}
                   </div>
 
-                  {isExpanded && <div className="devlogs-json">{JSON.stringify(log.details, null, 2)}</div>}
+                  {isExpanded && <div className="devlogs-json">{JSON.stringify(log.details || {}, null, 2)}</div>}
                 </div>
               );
             })
