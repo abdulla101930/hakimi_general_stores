@@ -452,10 +452,26 @@ export function PaymentModal({
                 </div>
               </div>
 
+              {/* Bank Deep Link Notice & Handle Switcher */}
+              <div
+                style={{
+                  backgroundColor: '#fffbebfb',
+                  border: '1px solid #fde68a',
+                  borderRadius: '12px',
+                  padding: '10px 12px',
+                  fontSize: '11px',
+                  color: '#92400e',
+                  marginBottom: '16px',
+                  lineHeight: '1.4'
+                }}
+              >
+                <strong>📌 Bank Limit Notice:</strong> If PhonePe/ICICI shows a bank limit error when clicking app buttons, <strong>copy the UPI ID below and paste it directly in your UPI App</strong> or <strong>scan the QR code</strong>.
+              </div>
+
               <div className="pm-qr-box">
                 <div className="pm-qr-title">
                   <QrCode size={16} color="#059669" />
-                  <span>2. Or Scan QR Code to Pay ₹{amount}</span>
+                  <span>2. Or Scan QR Code / Copy UPI ID</span>
                 </div>
 
                 <div className="pm-bank-badge">🏦 {bankAccountInfo}</div>
