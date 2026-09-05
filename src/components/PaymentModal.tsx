@@ -42,7 +42,7 @@ export function PaymentModal({
   const [txnSessionId, setTxnSessionId] = useState<string>('');
 
   const formattedAmount = amount.toFixed(2);
-  const upiUri = `upi://pay?pa=${OWNER_UPI_ID}&pn=HakimiSupermarket&am=${formattedAmount}&cu=INR&tr=${txnSessionId}&tn=HakimiOrder_${amount}`;
+  const upiUri = `upi://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent('Murtaza Basra')}&am=${formattedAmount}&cu=INR`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiUri)}`;
 
   // 5-Minute Timer Countdown Effect
@@ -100,14 +100,8 @@ export function PaymentModal({
     const newSessionId = `HKM-TXN-${Date.now().toString().slice(-6)}`;
     setTxnSessionId(newSessionId);
 
-    let deepLink = `upi://pay?pa=${OWNER_UPI_ID}&pn=HakimiSupermarket&am=${formattedAmount}&cu=INR&tr=${newSessionId}`;
-    if (appName === 'Google Pay') {
-      deepLink = `tez://upi/pay?pa=${OWNER_UPI_ID}&pn=HakimiSupermarket&am=${formattedAmount}&cu=INR&tr=${newSessionId}`;
-    } else if (appName === 'PhonePe') {
-      deepLink = `phonepe://pay?pa=${OWNER_UPI_ID}&pn=HakimiSupermarket&am=${formattedAmount}&cu=INR&tr=${newSessionId}`;
-    } else if (appName === 'Paytm') {
-      deepLink = `paytmmp://pay?pa=${OWNER_UPI_ID}&pn=HakimiSupermarket&am=${formattedAmount}&cu=INR&tr=${newSessionId}`;
-    }
+    // NPCI compliant P2P deep link without merchant reference parameters
+    const deepLink = `upi://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent('Murtaza Basra')}&am=${formattedAmount}&cu=INR`;
 
     startAutomatedHandshake(appName);
 
@@ -361,6 +355,12 @@ export function PaymentModal({
                   <span>Bill Total:</span>
                   <strong style={{ color: '#059669', fontSize: '13px' }}>₹{formattedAmount}</strong>
                 </div>
+                {txnSessionId && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+                    <span>Ref Session ID:</span>
+                    <strong style={{ color: '#0f172a', fontFamily: 'monospace' }}>{txnSessionId}</strong>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
                   <span>Handshake Status:</span>
                   <span
