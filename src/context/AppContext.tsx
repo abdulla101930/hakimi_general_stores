@@ -326,14 +326,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
       (error) => {
         console.warn('[Firestore] orders snapshot permission/network notice:', error.message);
-        setOrders((prev) => (prev.length > 0 ? prev : (safeJSONParse<Order[] | null>('hakimi_orders', null) || [])));
+        const saved = safeJSONParse<Order[] | null>('hakimi_orders', null);
+        if (Array.isArray(saved) && saved.length > 0) {
+          setOrders((prev) => {
+            const map = new Map<string, Order>();
+            prev.forEach((o) => map.set(o.id, o));
+            saved.forEach((o) => map.set(o.id, o));
+            return Array.from(map.values());
+          });
+        }
       }
     );
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    safeJSONStringify('hakimi_orders', orders);
+    if (orders.length > 0) {
+      safeJSONStringify('hakimi_orders', orders);
+    }
   }, [orders]);
 
   useEffect(() => {
