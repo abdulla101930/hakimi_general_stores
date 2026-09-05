@@ -101,11 +101,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
 
   const [catalog, setCatalog] = useState<Product[]>(() => {
-    if (!isConfigured) {
-      const saved = safeJSONParse<Product[] | null>('hakimi_catalog', null);
-      return Array.isArray(saved) && saved.length > 0 ? saved : DEFAULT_PRODUCTS;
-    }
-    return [];
+    const saved = safeJSONParse<Product[] | null>('hakimi_catalog', null);
+    return Array.isArray(saved) && saved.length > 0 ? saved : DEFAULT_PRODUCTS;
   });
   const [cart, setCart] = useState<Record<string, number>>(() => {
     const u = readUser();
@@ -114,7 +111,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const customerCatalog = useMemo(() => mergeCatalogByVariant(catalog), [catalog]);
 
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>(() => {
+    const saved = safeJSONParse<Order[] | null>('hakimi_orders', null);
+    return Array.isArray(saved) ? saved : [];
+  });
   const [activeOrder, setActiveOrder] = useState<Order | null>(() => {
     const parsed = safeJSONParse<Order | null>('hakimi_active_order', null);
     return parsed && typeof parsed === 'object' && parsed.id ? parsed : null;
@@ -265,9 +265,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       (snapshot) => {
         const productsList: Product[] = [];
         snapshot.forEach((doc) => {
-          productsList.push({ id: doc.id, ...doc.data() } as Product);
+          const data = doc.data() as Partial<Product>;
+          productsList.push({ id: doc.id, ...data } as Product);
         });
         if (productsList.length === 0) {
+          setCatalog(DEFAULT_PRODUCTS);
           DEFAULT_PRODUCTS.forEach(async (p) => {
             const { id, ...data } = p;
             await setDoc(doc(db, 'products', id), data).catch(() => {});
@@ -282,15 +284,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
       (error) => {
         console.warn('[Firestore] products snapshot permission/network notice:', error.message);
-        const saved = safeJSONParse<Product[] | null>('hakimi_catalog', null);
-        setCatalog(Array.isArray(saved) && saved.length > 0 ? saved : DEFAULT_PRODUCTS);
+        setCatalog((prev) => (prev.length > 0 ? prev : (safeJSONParse<Product[] | null>('hakimi_catalog', null) || DEFAULT_PRODUCTS)));
       }
     );
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (!isConfigured) safeJSONStringify('hakimi_catalog', catalog);
+    safeJSONStringify('hakimi_catalog', catalog);
   }, [catalog]);
 
   // --- Orders sync ---
@@ -305,26 +306,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
       (snapshot) => {
         const ordersList: Order[] = [];
         snapshot.forEach((doc) => {
-          ordersList.push(doc.data() as Order);
+          const data = doc.data() as Partial<Order>;
+          ordersList.push({ id: doc.id, ...data } as Order);
         });
-        ordersList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setOrders((prev) => {
-          const prevJson = JSON.stringify(prev);
-          const nextJson = JSON.stringify(ordersList);
-          return prevJson === nextJson ? prev : ordersList;
+          const map = new Map<string, Order>();
+          prev.forEach((o) => map.set(o.id, o));
+          const saved = safeJSONParse<Order[] | null>('hakimi_orders', []);
+          if (Array.isArray(saved)) saved.forEach((o) => map.set(o.id, o));
+          ordersList.forEach((o) => map.set(o.id, o));
+          const merged = Array.from(map.values());
+          merged.sort((a, b) => {
+            const ta = new Date(a.date).getTime();
+            const tb = new Date(b.date).getTime();
+            return (Number.isNaN(tb) ? 0 : tb) - (Number.isNaN(ta) ? 0 : ta);
+          });
+          return JSON.stringify(prev) === JSON.stringify(merged) ? prev : merged;
         });
       },
       (error) => {
         console.warn('[Firestore] orders snapshot permission/network notice:', error.message);
-        const saved = safeJSONParse<Order[] | null>('hakimi_orders', null);
-        setOrders(Array.isArray(saved) ? saved : []);
+        setOrders((prev) => (prev.length > 0 ? prev : (safeJSONParse<Order[] | null>('hakimi_orders', null) || [])));
       }
     );
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (!isConfigured) safeJSONStringify('hakimi_orders', orders);
+    safeJSONStringify('hakimi_orders', orders);
   }, [orders]);
 
   useEffect(() => {
@@ -515,10 +524,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       paymentStatus
     };
 
+    // Always update local orders state optimistically
+    setOrders((prev) => [newOrder, ...prev]);
+
     if (isConfigured) {
-      setDoc(doc(db, 'orders', newOrder.id), JSON.parse(JSON.stringify(newOrder))).catch(() => {});
-    } else {
-      setOrders((prev) => [newOrder, ...prev]);
+      setDoc(doc(db, 'orders', newOrder.id), JSON.parse(JSON.stringify(newOrder))).catch((err) => {
+        console.warn('Firestore setDoc order failed, kept in local state:', err);
+      });
     }
 
     setActiveOrder(newOrder);
@@ -554,10 +566,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       customerPhone: existingOrder?.customerPhone
     });
 
+    // Always update local orders and activeOrder state optimistically
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ...updatedFields } : o)));
+    setActiveOrder((prev) => (prev?.id === orderId ? { ...prev, ...updatedFields } : prev));
+
     if (isConfigured) {
-      updateDoc(doc(db, 'orders', orderId), JSON.parse(JSON.stringify(updatedFields))).catch(() => {});
-    } else {
-      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ...updatedFields } : o)));
+      updateDoc(doc(db, 'orders', orderId), JSON.parse(JSON.stringify(updatedFields))).catch((err) => {
+        console.warn('Firestore updateDoc order failed, kept in local state:', err);
+      });
     }
   };
 
@@ -573,10 +589,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       subCategory: p.subCategory,
       inStock: p.inStock
     });
+
+    setCatalog((prev) => [{ ...p, id: newId }, ...prev]);
+
     if (isConfigured) {
-      await setDoc(doc(db, 'products', newId), JSON.parse(JSON.stringify(p))).catch(() => {});
-    } else {
-      setCatalog((prev) => [{ ...p, id: newId }, ...prev]);
+      await setDoc(doc(db, 'products', newId), JSON.parse(JSON.stringify(p))).catch((err) => {
+        console.warn('Firestore setDoc product failed, kept in local state:', err);
+      });
     }
   };
 
@@ -588,10 +607,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updatedFields: fields,
       previousState: existingProduct
     });
+
+    setCatalog((prev) => prev.map((p) => (p.id === productId ? { ...p, ...fields } : p)));
+
     if (isConfigured) {
-      await updateDoc(doc(db, 'products', productId), JSON.parse(JSON.stringify(fields))).catch(() => {});
-    } else {
-      setCatalog((prev) => prev.map((p) => (p.id === productId ? { ...p, ...fields } : p)));
+      await updateDoc(doc(db, 'products', productId), JSON.parse(JSON.stringify(fields))).catch((err) => {
+        console.warn('Firestore updateDoc product failed, kept in local state:', err);
+      });
     }
   };
 
@@ -604,10 +626,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       mainCategory: targetProduct?.mainCategory,
       subCategory: targetProduct?.subCategory
     });
+
+    setCatalog((prev) => prev.filter((p) => p.id !== productId));
+
     if (isConfigured) {
-      await deleteDoc(doc(db, 'products', productId)).catch(() => {});
-    } else {
-      setCatalog((prev) => prev.filter((p) => p.id !== productId));
+      await deleteDoc(doc(db, 'products', productId)).catch((err) => {
+        console.warn('Firestore deleteDoc product failed, kept in local state:', err);
+      });
     }
   };
 
