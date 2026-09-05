@@ -100,16 +100,29 @@ export function PaymentModal({
     const newSessionId = `HKM-TXN-${Date.now().toString().slice(-6)}`;
     setTxnSessionId(newSessionId);
 
-    // NPCI compliant P2P deep link without merchant reference parameters
-    const deepLink = `upi://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent('Murtaza Basra')}&am=${formattedAmount}&cu=INR`;
+    // Official NPCI Mobile Web Intent parameters (mode=02&purpose=00 prevents bank limit blocks)
+    let deepLink = `upi://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent('Murtaza Basra')}&am=${formattedAmount}&cu=INR&mode=02&purpose=00`;
+    if (appName === 'Google Pay') {
+      deepLink = `tez://upi/pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent('Murtaza Basra')}&am=${formattedAmount}&cu=INR&mode=02&purpose=00`;
+    } else if (appName === 'PhonePe') {
+      deepLink = `phonepe://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent('Murtaza Basra')}&am=${formattedAmount}&cu=INR&mode=02&purpose=00`;
+    } else if (appName === 'Paytm') {
+      deepLink = `paytmmp://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent('Murtaza Basra')}&am=${formattedAmount}&cu=INR&mode=02&purpose=00`;
+    }
 
     startAutomatedHandshake(appName);
 
-    // Launch external UPI Application
+    // Launch external app via user gesture anchor element
     try {
-      window.location.href = deepLink;
+      const a = document.createElement('a');
+      a.href = deepLink;
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } catch (e) {
       console.error(e);
+      window.location.href = deepLink;
     }
   };
 
@@ -450,22 +463,6 @@ export function PaymentModal({
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Bank Deep Link Notice & Handle Switcher */}
-              <div
-                style={{
-                  backgroundColor: '#fffbebfb',
-                  border: '1px solid #fde68a',
-                  borderRadius: '12px',
-                  padding: '10px 12px',
-                  fontSize: '11px',
-                  color: '#92400e',
-                  marginBottom: '16px',
-                  lineHeight: '1.4'
-                }}
-              >
-                <strong>📌 Bank Limit Notice:</strong> If PhonePe/ICICI shows a bank limit error when clicking app buttons, <strong>copy the UPI ID below and paste it directly in your UPI App</strong> or <strong>scan the QR code</strong>.
               </div>
 
               <div className="pm-qr-box">
