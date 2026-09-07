@@ -4,7 +4,7 @@ import { FOOD_SUBDIVISIONS as FOOD_SUBS, HYGIENE_SUBDIVISIONS as HYG_SUBS } from
 import { stopOwnerRingingAlarm } from '../lib/sound';
 import { isImageSrc } from '../lib/cart';
 import type { OrderStatus, Product } from '../types';
-import { Plus, Edit, Trash2, Package, Truck, Save, User, VolumeX, Bell, Upload, CheckCircle2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Truck, Save, User, VolumeX, Bell, Upload, CheckCircle2, Search, X } from 'lucide-react';
 import { compressImageFile } from '../lib/imageCompressor';
 
 export function OwnerDashboard() {
@@ -29,6 +29,7 @@ export function OwnerDashboard() {
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'settings'>('orders');
   const [selectedCustomerPhone, setSelectedCustomerPhone] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | OrderStatus>('all');
+  const [inventorySearchQuery, setInventorySearchQuery] = useState('');
   const [thresholdInput, setThresholdInput] = useState<string>(freeDeliveryThreshold.toString());
   const [pricingModeInput, setPricingModeInput] = useState<'flat' | 'distance'>(deliveryPricingMode || 'flat');
   const [flatChargeInput, setFlatChargeInput] = useState<string>((flatDeliveryCharge ?? 30).toString());
@@ -213,6 +214,18 @@ export function OwnerDashboard() {
   const filteredOrders = sortedOrders
     .filter((o) => selectedCustomerPhone === 'all' || o.customerPhone === selectedCustomerPhone)
     .filter((o) => selectedStatus === 'all' || o.status === selectedStatus);
+
+  const filteredCatalog = catalog.filter((product) => {
+    if (!inventorySearchQuery.trim()) return true;
+    const q = inventorySearchQuery.toLowerCase().trim();
+    return (
+      product.name.toLowerCase().includes(q) ||
+      (product.subCategory && product.subCategory.toLowerCase().includes(q)) ||
+      (product.mainCategory && product.mainCategory.toLowerCase().includes(q)) ||
+      (product.weight && product.weight.toLowerCase().includes(q)) ||
+      (product.price && product.price.toString().includes(q))
+    );
+  });
 
   const statusCount = (s: OrderStatus) => orders.filter((o) => o.status === s).length;
 
@@ -624,10 +637,87 @@ export function OwnerDashboard() {
             </form>
 
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '10px' }}>
-              <h3 className="admin-inventory-title">Inventory ({catalog.length} products)</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                  <h3 className="admin-inventory-title" style={{ margin: 0 }}>
+                    INVENTORY ({inventorySearchQuery.trim() ? `${filteredCatalog.length} OF ${catalog.length}` : catalog.length} PRODUCTS)
+                  </h3>
+                </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {catalog.map((product) => (
+                {/* Inventory Search Bar */}
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
+                  <Search
+                    size={16}
+                    color="#64748b"
+                    style={{ position: 'absolute', left: '12px', pointerEvents: 'none' }}
+                  />
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Search inventory by product name, category, size..."
+                    value={inventorySearchQuery}
+                    onChange={(e) => setInventorySearchQuery(e.target.value)}
+                    style={{
+                      width: '100%',
+                      paddingLeft: '36px',
+                      paddingRight: inventorySearchQuery ? '36px' : '12px',
+                      height: '42px',
+                      fontSize: '13px',
+                      borderRadius: '10px',
+                      backgroundColor: 'var(--bg-input, #f8fafc)',
+                      border: '1px solid var(--border-color, #e2e8f0)'
+                    }}
+                  />
+                  {inventorySearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setInventorySearchQuery('')}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        background: 'none',
+                        border: 'none',
+                        color: '#94a3b8',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '4px'
+                      }}
+                      title="Clear search"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {filteredCatalog.length === 0 ? (
+                <div className="admin-empty-card" style={{ padding: '30px 16px', textAlign: 'center' }}>
+                  <span style={{ fontSize: '28px' }}>🔍</span>
+                  <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '8px' }}>
+                    No inventory products match "{inventorySearchQuery}"
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setInventorySearchQuery('')}
+                    style={{
+                      marginTop: '10px',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--primary, #059669)',
+                      fontWeight: 700,
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      textDecoration: 'underline'
+                    }}
+                  >
+                    Clear Search Filter
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {filteredCatalog.map((product) => (
                   <div key={product.id} className="admin-product-item">
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       <div
@@ -677,6 +767,7 @@ export function OwnerDashboard() {
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </div>
         )}

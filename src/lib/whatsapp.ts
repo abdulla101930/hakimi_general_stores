@@ -48,14 +48,14 @@ export const buildCheckoutWhatsAppText = (
   order: Order,
   opts: { instruction: string; paymentDetails?: string }
 ): string => {
-  const { instruction, paymentDetails } = opts;
+  const { instruction } = opts;
   let msg = `🛒 *NEW ORDER - HAKIMI GENERAL STORE*\n`;
   msg += `------------------------------------\n`;
   msg += `👤 *Customer:* ${order.customerName} (${order.customerPhone})\n`;
   msg += `📍 *Delivery Address:* ${order.address.type} - ${order.address.details}\n`;
   msg += `📋 *Instruction:* ${instruction}\n`;
-  msg += `💳 *Payment Method:* ${order.paymentMethod === 'ONLINE' ? '🟢 ONLINE PAYMENT' : '💵 CASH ON DELIVERY (COD)'}\n`;
-  msg += `📊 *Payment Status:* ${order.paymentStatus} ${paymentDetails ? `(${paymentDetails})` : ''}\n\n`;
+  msg += `💳 *Payment Method:* 💵 CASH ON DELIVERY (COD)\n`;
+  msg += `📊 *Payment Status:* Cash on Delivery\n\n`;
   msg += `📦 *ORDER ITEMS:*\n`;
 
   order.items.forEach((item, index) => {
