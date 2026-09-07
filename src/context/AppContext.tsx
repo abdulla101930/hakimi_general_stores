@@ -67,6 +67,7 @@ interface AppContextType {
     paymentStatus?: 'Pending' | 'Paid (Online)'
   ) => Order;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
+  deleteOrder: (orderId: string) => void;
   addNewAddress: (addr: Address) => void;
   addProduct: (product: Omit<Product, 'id'>) => void;
   updateProduct: (productId: string, updatedFields: Partial<Product>) => void;
@@ -587,6 +588,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const deleteOrder = async (orderId: string) => {
+    const existingOrder = orders.find((o) => o.id === orderId);
+    logOwnerAction('ORDER_DELETED', {
+      orderId,
+      customerName: existingOrder?.customerName,
+      customerPhone: existingOrder?.customerPhone,
+      amount: existingOrder?.bill?.grandTotal
+    });
+
+    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    setActiveOrder((prev) => (prev?.id === orderId ? null : prev));
+
+    if (isConfigured) {
+      deleteDoc(doc(db, 'orders', orderId)).catch((err) => {
+        console.warn('Firestore deleteDoc order failed, kept in local state:', err);
+      });
+    }
+  };
+
   const addProduct = async (p: Omit<Product, 'id'>) => {
     const newId = `prod-${Math.floor(1000 + Math.random() * 9000)}`;
     logOwnerAction('PRODUCT_ADDED', {
@@ -685,6 +705,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         removeCoupon,
         createOrder,
         updateOrderStatus,
+        deleteOrder,
         addProduct,
         updateProduct,
         deleteProduct,

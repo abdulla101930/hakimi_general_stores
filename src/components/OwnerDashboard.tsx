@@ -3,8 +3,8 @@ import { useApp } from '../context/AppContext';
 import { FOOD_SUBDIVISIONS as FOOD_SUBS, HYGIENE_SUBDIVISIONS as HYG_SUBS } from '../lib/constants';
 import { stopOwnerRingingAlarm } from '../lib/sound';
 import { isImageSrc } from '../lib/cart';
-import type { OrderStatus, Product } from '../types';
-import { Plus, Edit, Trash2, Package, Truck, Save, User, VolumeX, Bell, Upload, CheckCircle2, Search, X } from 'lucide-react';
+import type { Order, OrderStatus, Product } from '../types';
+import { Plus, Edit, Trash2, Package, Truck, Save, User, VolumeX, Bell, Upload, CheckCircle2, Search, X, AlertTriangle } from 'lucide-react';
 import { compressImageFile } from '../lib/imageCompressor';
 
 export function OwnerDashboard() {
@@ -12,6 +12,7 @@ export function OwnerDashboard() {
     catalog,
     orders,
     updateOrderStatus,
+    deleteOrder,
     addProduct,
     updateProduct,
     deleteProduct,
@@ -30,6 +31,7 @@ export function OwnerDashboard() {
   const [selectedCustomerPhone, setSelectedCustomerPhone] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | OrderStatus>('all');
   const [inventorySearchQuery, setInventorySearchQuery] = useState('');
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
   const [thresholdInput, setThresholdInput] = useState<string>(freeDeliveryThreshold.toString());
   const [pricingModeInput, setPricingModeInput] = useState<'flat' | 'distance'>(deliveryPricingMode || 'flat');
   const [flatChargeInput, setFlatChargeInput] = useState<string>((flatDeliveryCharge ?? 30).toString());
@@ -374,16 +376,38 @@ export function OwnerDashboard() {
                       <div className="admin-order-date">{order.date}</div>
                     </div>
 
-                    <select
-                      className="status-dropdown"
-                      value={order.status}
-                      onChange={(e) => updateOrderStatus(order.id, e.target.value as OrderStatus)}
-                    >
-                      <option value="placed">Placed</option>
-                      <option value="packing">Packing</option>
-                      <option value="out_for_delivery">Out for Delivery</option>
-                      <option value="delivered">Delivered</option>
-                    </select>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <select
+                        className="status-dropdown"
+                        value={order.status}
+                        onChange={(e) => updateOrderStatus(order.id, e.target.value as OrderStatus)}
+                      >
+                        <option value="placed">Placed</option>
+                        <option value="packing">Packing</option>
+                        <option value="out_for_delivery">Out for Delivery</option>
+                        <option value="delivered">Delivered</option>
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => setOrderToDelete(order)}
+                        title="Delete Order Log"
+                        style={{
+                          background: '#fef2f2',
+                          border: '1px solid #fecaca',
+                          borderRadius: '8px',
+                          padding: '6px',
+                          color: '#dc2626',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <X size={15} />
+                      </button>
+                    </div>
                   </div>
 
                   <div style={{ fontSize: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
@@ -897,6 +921,94 @@ export function OwnerDashboard() {
           </div>
         )}
       </div>
+
+      {orderToDelete && (
+        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+          <div
+            className="modal-content"
+            style={{
+              maxWidth: '400px',
+              width: '90%',
+              borderRadius: '16px',
+              padding: '24px',
+              backgroundColor: '#ffffff',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.2)',
+              textAlign: 'center'
+            }}
+          >
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                backgroundColor: '#fef2f2',
+                color: '#dc2626',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px',
+                border: '1px solid #fecaca'
+              }}
+            >
+              <AlertTriangle size={28} />
+            </div>
+
+            <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
+              Delete Order Log?
+            </h3>
+
+            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '20px', lineHeight: 1.5 }}>
+              Are you sure you want to permanently delete order log <strong>#{orderToDelete.id}</strong> for{' '}
+              <strong>{orderToDelete.customerName}</strong> ({orderToDelete.customerPhone})?
+              <br />
+              <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: 700, display: 'inline-block', marginTop: '8px' }}>
+                ⚠️ This log entry will be permanently deleted from store records.
+              </span>
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setOrderToDelete(null)}
+                style={{
+                  flex: 1,
+                  padding: '11px 16px',
+                  borderRadius: '10px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#475569',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteOrder(orderToDelete.id);
+                  setOrderToDelete(null);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '11px 16px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  backgroundColor: '#dc2626',
+                  color: '#ffffff',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)'
+                }}
+              >
+                Yes, Delete Log
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
