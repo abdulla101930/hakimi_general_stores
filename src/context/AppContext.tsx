@@ -295,7 +295,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     safeJSONStringify('hakimi_catalog', catalog);
   }, [catalog]);
 
-  // --- Orders sync ---
+  // --- Orders real-time sync ---
   useEffect(() => {
     if (!isConfigured) {
       const saved = safeJSONParse<Order[] | null>('hakimi_orders', null);
@@ -306,35 +306,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
       collection(db, 'orders'),
       (snapshot) => {
         const ordersList: Order[] = [];
-        snapshot.forEach((doc) => {
-          const data = doc.data() as Partial<Order>;
-          ordersList.push({ id: doc.id, ...data } as Order);
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as Partial<Order>;
+          ordersList.push({ id: docSnap.id, ...data } as Order);
+        });
+        ordersList.sort((a, b) => {
+          const ta = new Date(a.date).getTime();
+          const tb = new Date(b.date).getTime();
+          return (Number.isNaN(tb) ? 0 : tb) - (Number.isNaN(ta) ? 0 : ta);
         });
         setOrders((prev) => {
-          const map = new Map<string, Order>();
-          prev.forEach((o) => map.set(o.id, o));
-          const saved = safeJSONParse<Order[] | null>('hakimi_orders', []);
-          if (Array.isArray(saved)) saved.forEach((o) => map.set(o.id, o));
-          ordersList.forEach((o) => map.set(o.id, o));
-          const merged = Array.from(map.values());
-          merged.sort((a, b) => {
-            const ta = new Date(a.date).getTime();
-            const tb = new Date(b.date).getTime();
-            return (Number.isNaN(tb) ? 0 : tb) - (Number.isNaN(ta) ? 0 : ta);
-          });
-          return JSON.stringify(prev) === JSON.stringify(merged) ? prev : merged;
+          const prevJson = JSON.stringify(prev);
+          const nextJson = JSON.stringify(ordersList);
+          return prevJson === nextJson ? prev : ordersList;
         });
+        safeJSONStringify('hakimi_orders', ordersList);
       },
       (error) => {
         console.warn('[Firestore] orders snapshot permission/network notice:', error.message);
         const saved = safeJSONParse<Order[] | null>('hakimi_orders', null);
-        if (Array.isArray(saved) && saved.length > 0) {
-          setOrders((prev) => {
-            const map = new Map<string, Order>();
-            prev.forEach((o) => map.set(o.id, o));
-            saved.forEach((o) => map.set(o.id, o));
-            return Array.from(map.values());
-          });
+        if (Array.isArray(saved)) {
+          setOrders(saved);
         }
       }
     );
