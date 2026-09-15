@@ -158,41 +158,18 @@ export function PaymentModal({
     const newSessionId = `HKM-TXN-${Date.now().toString().slice(-6)}`;
     setTxnSessionId(newSessionId);
 
-    const isAndroid = /Android/i.test(navigator.userAgent);
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const orderNote = encodeURIComponent('Hakimi Supermarket Order');
     const payeeName = encodeURIComponent(OWNER_NAME);
 
-    // Standard Universal NPCI Compliant UPI URI Scheme
-    let primaryUri = `upi://pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR&tn=${orderNote}`;
-
-    if (isAndroid) {
-      if (appName === 'Google Pay') {
-        primaryUri = `intent://pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR&tn=${orderNote}#Intent;scheme=upi;package=com.google.android.apps.nfc.phone;end;`;
-      } else if (appName === 'PhonePe') {
-        primaryUri = `intent://pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR&tn=${orderNote}#Intent;scheme=upi;package=com.phonepe.app;end;`;
-      } else if (appName === 'Paytm') {
-        primaryUri = `intent://pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR&tn=${orderNote}#Intent;scheme=upi;package=net.one97.paytm;end;`;
-      } else if (appName === 'BHIM UPI') {
-        primaryUri = `intent://pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR&tn=${orderNote}#Intent;scheme=upi;package=in.org.npci.upiapp;end;`;
-      }
-    } else if (isIOS) {
-      if (appName === 'Google Pay') {
-        primaryUri = `tez://upi/pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR&tn=${orderNote}`;
-      } else if (appName === 'PhonePe') {
-        primaryUri = `phonepe://pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR&tn=${orderNote}`;
-      } else if (appName === 'Paytm') {
-        primaryUri = `paytmmp://pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR&tn=${orderNote}`;
-      }
-    }
+    // Pure Universal NPCI Standard UPI URI (Supported natively by all Android & iOS UPI apps)
+    const cleanUpiUri = `upi://pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR`;
 
     startAutomatedHandshake(appName);
 
-    // Direct browser navigation to open UPI app
+    // Synchronous top-level redirect to invoke native Android/iOS UPI app selector
     try {
-      window.location.href = primaryUri;
+      window.location.href = cleanUpiUri;
     } catch {
-      window.open(primaryUri, '_self');
+      window.open(cleanUpiUri, '_self');
     }
   };
 
