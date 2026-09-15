@@ -28,34 +28,41 @@ interface PaymentModalProps {
 const bankAccountInfo = `HDFC Bank - 7162 (${OWNER_NAME})`;
 
 const GooglePayIcon = () => (
-  <svg width="26" height="26" viewBox="0 0 48 48" fill="none">
-    <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107"/>
-    <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00"/>
-    <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50"/>
-    <path d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2"/>
+  <svg width="44" height="26" viewBox="0 0 100 40" fill="none">
+    <rect width="100" height="40" rx="8" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <path d="M28.3 20.3c0-.6-.1-1.3-.2-1.9H18v3.6h5.8c-.3 1.4-1 2.5-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8.3z" fill="#4285F4"/>
+    <path d="M18 30.8c3.5 0 6.4-1.1 8.5-3.1l-3.6-2.7c-1.1.8-2.6 1.3-4.9 1.3-3.8 0-7-2.6-8.1-6.1H6.2v2.8c2.2 4.4 6.7 7.8 11.8 7.8z" fill="#34A853"/>
+    <path d="M9.9 20.2c-.3-.8-.5-1.7-.5-2.7s.2-1.9.5-2.7v-2.8H6.2C5.4 13.7 5 15.8 5 18s.4 4.3 1.2 6l3.7-2.8z" fill="#FBBC05"/>
+    <path d="M18 9.2c2 0 3.7.7 5.1 1.9l3.8-3.8C24.4 5.1 21.5 4 18 4 12.9 4 8.4 7.4 6.2 11.8l3.7 2.8c1.1-3.5 4.3-6.1 8.1-6.1z" fill="#EA4335"/>
+    <path d="M38.8 28V12h3.5v16h-3.5zm11.4-4.5c0 1.2-.4 2.2-1.1 3-.7.8-1.7 1.2-2.8 1.2-1.2 0-2.1-.4-2.8-1.2-.7-.8-1.1-1.8-1.1-3s.4-2.2 1.1-3c.7-.8 1.7-1.2 2.8-1.2 1.2 0 2.1.4 2.8 1.2.7.8 1.1 1.8 1.1 3zm3.4 0c0-2.1-.7-3.8-2.1-5.1-1.4-1.3-3.2-2-5.3-2-2.2 0-4 .7-5.4 2-1.4 1.3-2.1 3-2.1 5.1s.7 3.8 2.1 5.1c1.4 1.3 3.2 2 5.4 2 2.2 0 4-.7 5.3-2 1.4-1.3 2.1-3 2.1-5.1zm11.7.5c0 1.1-.4 2.1-1.2 2.8-.8.8-1.8 1.2-3 1.2-1.1 0-2.1-.4-2.9-1.2-.8-.8-1.2-1.8-1.2-2.8V16.4h-3.4V24c0 2.1.7 3.8 2.1 5.1 1.4 1.3 3.2 2 5.4 2s4-.7 5.4-2c1.4-1.3 2.1-3 2.1-5.1v-7.6h-3.3v7.6zm10.7-3.6c-1.1 0-2.1.4-2.8 1.2-.7.8-1.1 1.8-1.1 3s.4 2.2 1.1 3c.7.8 1.7 1.2 2.8 1.2 1.2 0 2.1-.4 2.8-1.2.7-.8 1.1-1.8 1.1-3s-.4-2.2-1.1-3c-.7-.8-1.7-1.2-2.8-1.2zm3.4 0c0-2.1-.7-3.8-2.1-5.1-1.4-1.3-3.2-2-5.3-2-2.2 0-4 .7-5.4 2-1.4 1.3-2.1 3-2.1 5.1s.7 3.8 2.1 5.1c1.4 1.3 3.2 2 5.4 2 2.2 0 4-.7 5.3-2 1.4-1.3 2.1-3 2.1-5.1z" fill="#5F6368"/>
   </svg>
 );
 
 const PhonePeIcon = () => (
-  <svg width="26" height="26" viewBox="0 0 48 48" fill="none">
-    <rect width="48" height="48" rx="12" fill="#5F259F"/>
-    <path d="M33 15H25.6L20.4 25.6H25.6C29.6 25.6 33 23.2 33 19.1C33 15 33 15 33 15Z" fill="white"/>
-    <path d="M15 15V33H20.4V28.4H25.6L31 33H37.6L31.2 27.4C34.4 25.8 36.4 22.6 36.4 19C36.4 14.4 32.4 11 27.6 11H15V15Z" fill="white"/>
+  <svg width="30" height="30" viewBox="0 0 100 100" fill="none">
+    <rect width="100" height="100" rx="22" fill="#5F259F"/>
+    <path d="M66 30H52L41 54H52C60 54 66 49 66 40.5C66 32 66 30 66 30Z" fill="white"/>
+    <path d="M30 30V68H35.5V58.5H41L52 68H66L53 56.5C59.5 53.2 63.5 46.6 63.5 39.2C63.5 29.8 55.5 23 45.5 23H30V30Z" fill="white"/>
   </svg>
 );
 
 const PaytmIcon = () => (
-  <svg width="26" height="26" viewBox="0 0 48 48" fill="none">
-    <rect width="48" height="48" rx="12" fill="#002E6E"/>
-    <path d="M9 16h6v16H9zM17 16h9c2.2 0 4 1.8 4 4v2c0 2.2-1.8 4-4 4h-5v6h-4V16zm3 3v5h6v-5h-6zM30 16h9v3h-3v13h-3V19h-3v-3z" fill="#00BAF2"/>
+  <svg width="44" height="26" viewBox="0 0 120 45" fill="none">
+    <rect width="120" height="45" rx="8" fill="#002E6E"/>
+    <path d="M12 12h10v22H12z" fill="#00BAF2"/>
+    <path d="M25 12h16c5 0 9 3 9 7v2c0 4-4 7-9 7h-7v8H25V12zm9 5v6h7v-6h-7z" fill="#00BAF2"/>
+    <path d="M52 12h16v5h-5v17h-6V17h-5v-5z" fill="#00BAF2"/>
+    <path d="M70 12h9l6 11 6-11h9L88 34h-7L70 12z" fill="#00BAF2"/>
+    <path d="M102 12h12v22h-12z" fill="#00BAF2"/>
   </svg>
 );
 
 const BhimUpiIcon = () => (
-  <svg width="26" height="26" viewBox="0 0 48 48" fill="none">
-    <rect width="48" height="48" rx="12" fill="#0284C7"/>
-    <path d="M14 12h11c2.8 0 5 2.2 5 5 0 1.8-1 3.4-2.4 4.2C29.4 22 31 24 31 26.4c0 3.1-2.5 5.6-5.6 5.6H14V12zm6 6v4h4c1.1 0 2-.9 2-2s-.9-2-2-2h-4zm0 8v4h5c1.1 0 2-.9 2-2s-.9-2-2-2h-5z" fill="white"/>
-    <path d="M32 32l6-8-6-8" stroke="#22C55E" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg width="44" height="26" viewBox="0 0 120 45" fill="none">
+    <rect width="120" height="45" rx="8" fill="#0284C7"/>
+    <path d="M14 10h20c5 0 9 4 9 9 0 3-1.5 5.5-4 7 4 2 6.5 6 6.5 10 0 5.5-4.5 10-10 10H14V10zm8 7v6h8c1.8 0 3-1.2 3-3s-1.2-3-3-3h-8zm0 12v7h9c1.8 0 3-1.2 3-3.5s-1.2-3.5-3-3.5h-9z" fill="#FFFFFF"/>
+    <path d="M60 36l12-13.5L60 9" stroke="#FF6600" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M82 36l12-13.5L82 9" stroke="#22C55E" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
@@ -75,7 +82,7 @@ export function PaymentModal({
   const [txnSessionId, setTxnSessionId] = useState<string>('');
 
   const formattedAmount = amount.toFixed(2);
-  const upiUri = `upi://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR`;
+  const upiUri = `upi://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent('Hakimi Supermarket Order')}`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiUri)}`;
 
   // 1. 2-Minute Payment Initialization Handshake Timer (120s)
@@ -153,33 +160,35 @@ export function PaymentModal({
 
     const isAndroid = /Android/i.test(navigator.userAgent);
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
-    // Standard Universal NPCI UPI URI Scheme
-    let primaryUri = `upi://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR&mode=02&purpose=00`;
+    const orderNote = encodeURIComponent('Hakimi Supermarket Order');
+    const payeeName = encodeURIComponent(OWNER_NAME);
+
+    // Standard Universal NPCI Compliant UPI URI Scheme
+    let primaryUri = `upi://pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR&tn=${orderNote}`;
 
     if (isAndroid) {
       if (appName === 'Google Pay') {
-        primaryUri = `intent://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR#Intent;scheme=upi;package=com.google.android.apps.nfc.phone;end;`;
+        primaryUri = `intent://pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR&tn=${orderNote}#Intent;scheme=upi;package=com.google.android.apps.nfc.phone;end;`;
       } else if (appName === 'PhonePe') {
-        primaryUri = `intent://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR#Intent;scheme=upi;package=com.phonepe.app;end;`;
+        primaryUri = `intent://pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR&tn=${orderNote}#Intent;scheme=upi;package=com.phonepe.app;end;`;
       } else if (appName === 'Paytm') {
-        primaryUri = `intent://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR#Intent;scheme=upi;package=net.one97.paytm;end;`;
+        primaryUri = `intent://pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR&tn=${orderNote}#Intent;scheme=upi;package=net.one97.paytm;end;`;
       } else if (appName === 'BHIM UPI') {
-        primaryUri = `intent://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR#Intent;scheme=upi;package=in.org.npci.upiapp;end;`;
+        primaryUri = `intent://pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR&tn=${orderNote}#Intent;scheme=upi;package=in.org.npci.upiapp;end;`;
       }
     } else if (isIOS) {
       if (appName === 'Google Pay') {
-        primaryUri = `tez://upi/pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR`;
+        primaryUri = `tez://upi/pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR&tn=${orderNote}`;
       } else if (appName === 'PhonePe') {
-        primaryUri = `phonepe://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR`;
+        primaryUri = `phonepe://pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR&tn=${orderNote}`;
       } else if (appName === 'Paytm') {
-        primaryUri = `paytmmp://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR`;
+        primaryUri = `paytmmp://pay?pa=${OWNER_UPI_ID}&pn=${payeeName}&am=${formattedAmount}&cu=INR&tn=${orderNote}`;
       }
     }
 
     startAutomatedHandshake(appName);
 
-    // Direct synchronous browser location change to trigger app intent
+    // Direct browser navigation to open UPI app
     try {
       window.location.href = primaryUri;
     } catch {
