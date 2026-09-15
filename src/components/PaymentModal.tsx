@@ -27,6 +27,38 @@ interface PaymentModalProps {
 
 const bankAccountInfo = `HDFC Bank - 7162 (${OWNER_NAME})`;
 
+const GooglePayIcon = () => (
+  <svg width="26" height="26" viewBox="0 0 48 48" fill="none">
+    <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107"/>
+    <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00"/>
+    <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50"/>
+    <path d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2"/>
+  </svg>
+);
+
+const PhonePeIcon = () => (
+  <svg width="26" height="26" viewBox="0 0 48 48" fill="none">
+    <rect width="48" height="48" rx="12" fill="#5F259F"/>
+    <path d="M33 15H25.6L20.4 25.6H25.6C29.6 25.6 33 23.2 33 19.1C33 15 33 15 33 15Z" fill="white"/>
+    <path d="M15 15V33H20.4V28.4H25.6L31 33H37.6L31.2 27.4C34.4 25.8 36.4 22.6 36.4 19C36.4 14.4 32.4 11 27.6 11H15V15Z" fill="white"/>
+  </svg>
+);
+
+const PaytmIcon = () => (
+  <svg width="26" height="26" viewBox="0 0 48 48" fill="none">
+    <rect width="48" height="48" rx="12" fill="#002E6E"/>
+    <path d="M9 16h6v16H9zM17 16h9c2.2 0 4 1.8 4 4v2c0 2.2-1.8 4-4 4h-5v6h-4V16zm3 3v5h6v-5h-6zM30 16h9v3h-3v13h-3V19h-3v-3z" fill="#00BAF2"/>
+  </svg>
+);
+
+const BhimUpiIcon = () => (
+  <svg width="26" height="26" viewBox="0 0 48 48" fill="none">
+    <rect width="48" height="48" rx="12" fill="#0284C7"/>
+    <path d="M14 12h11c2.8 0 5 2.2 5 5 0 1.8-1 3.4-2.4 4.2C29.4 22 31 24 31 26.4c0 3.1-2.5 5.6-5.6 5.6H14V12zm6 6v4h4c1.1 0 2-.9 2-2s-.9-2-2-2h-4zm0 8v4h5c1.1 0 2-.9 2-2s-.9-2-2-2h-5z" fill="white"/>
+    <path d="M32 32l6-8-6-8" stroke="#22C55E" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
 export function PaymentModal({
   isOpen,
   onClose,
@@ -119,27 +151,39 @@ export function PaymentModal({
     const newSessionId = `HKM-TXN-${Date.now().toString().slice(-6)}`;
     setTxnSessionId(newSessionId);
 
-    let deepLink = `upi://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR&mode=02&purpose=00`;
-    if (appName === 'Google Pay') {
-      deepLink = `tez://upi/pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR&mode=02&purpose=00`;
-    } else if (appName === 'PhonePe') {
-      deepLink = `phonepe://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR&mode=02&purpose=00`;
-    } else if (appName === 'Paytm') {
-      deepLink = `paytmmp://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR&mode=02&purpose=00`;
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+    // Standard Universal NPCI UPI URI Scheme
+    let primaryUri = `upi://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR&mode=02&purpose=00`;
+
+    if (isAndroid) {
+      if (appName === 'Google Pay') {
+        primaryUri = `intent://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR#Intent;scheme=upi;package=com.google.android.apps.nfc.phone;end;`;
+      } else if (appName === 'PhonePe') {
+        primaryUri = `intent://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR#Intent;scheme=upi;package=com.phonepe.app;end;`;
+      } else if (appName === 'Paytm') {
+        primaryUri = `intent://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR#Intent;scheme=upi;package=net.one97.paytm;end;`;
+      } else if (appName === 'BHIM UPI') {
+        primaryUri = `intent://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR#Intent;scheme=upi;package=in.org.npci.upiapp;end;`;
+      }
+    } else if (isIOS) {
+      if (appName === 'Google Pay') {
+        primaryUri = `tez://upi/pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR`;
+      } else if (appName === 'PhonePe') {
+        primaryUri = `phonepe://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR`;
+      } else if (appName === 'Paytm') {
+        primaryUri = `paytmmp://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent(OWNER_NAME)}&am=${formattedAmount}&cu=INR`;
+      }
     }
 
     startAutomatedHandshake(appName);
 
+    // Direct synchronous browser location change to trigger app intent
     try {
-      const a = document.createElement('a');
-      a.href = deepLink;
-      a.rel = 'noopener noreferrer';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch (e) {
-      console.error(e);
-      window.location.href = deepLink;
+      window.location.href = primaryUri;
+    } catch {
+      window.open(primaryUri, '_self');
     }
   };
 
@@ -169,10 +213,10 @@ export function PaymentModal({
   });
 
   const upiApps = [
-    { name: 'Google Pay', icon: '🔵', bg: '#eff6ff', color: '#1d4ed8' },
-    { name: 'PhonePe', icon: '🟣', bg: '#faf5ff', color: '#6b21a8' },
-    { name: 'Paytm', icon: '🔷', bg: '#f0f9ff', color: '#0369a1' },
-    { name: 'BHIM UPI', icon: '🟠', bg: '#fff7ed', color: '#c2410c' }
+    { name: 'Google Pay', icon: <GooglePayIcon />, bg: '#ffffff', color: '#1d4ed8', border: '#e2e8f0' },
+    { name: 'PhonePe', icon: <PhonePeIcon />, bg: '#ffffff', color: '#6b21a8', border: '#e2e8f0' },
+    { name: 'Paytm', icon: <PaytmIcon />, bg: '#ffffff', color: '#0369a1', border: '#e2e8f0' },
+    { name: 'BHIM UPI', icon: <BhimUpiIcon />, bg: '#ffffff', color: '#0284c7', border: '#e2e8f0' }
   ];
 
   return (
@@ -511,20 +555,24 @@ export function PaymentModal({
                       onClick={() => handleUpiAppRedirect(app.name)}
                       className="pm-app-btn"
                       style={{
-                        backgroundColor: app.bg,
-                        borderColor: '#e2e8f0',
-                        padding: '10px 4px',
-                        borderRadius: '10px',
-                        border: '1px solid #e2e8f0',
+                        backgroundColor: '#ffffff',
+                        border: '1.5px solid #e2e8f0',
+                        padding: '12px 6px',
+                        borderRadius: '14px',
                         cursor: 'pointer',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        gap: '4px'
+                        justifyContent: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
+                        transition: 'all 0.2s ease'
                       }}
                     >
-                      <span style={{ fontSize: '20px' }}>{app.icon}</span>
-                      <span style={{ fontSize: '9.5px', fontWeight: 800, color: app.color }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '30px' }}>
+                        {app.icon}
+                      </div>
+                      <span style={{ fontSize: '10px', fontWeight: 800, color: '#1e293b' }}>
                         {app.name}
                       </span>
                     </button>
