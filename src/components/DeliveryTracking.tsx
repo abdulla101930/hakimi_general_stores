@@ -445,7 +445,7 @@ export function DeliveryTracking() {
 
               <div className="bill-payment-mode-badge">
                 <span>
-                  💳 Payment Mode: Cash on Delivery (COD)
+                  💳 Payment Mode: {displayedOrder.paymentMethod === 'ONLINE' ? '🟢 Paid (Online UPI)' : '💵 Cash on Delivery (COD)'}
                 </span>
               </div>
             </div>

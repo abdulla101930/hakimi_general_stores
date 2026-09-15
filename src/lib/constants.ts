@@ -6,7 +6,7 @@ export const OWNER_PHONE = '+919993949604';
 export const OWNER_PHONE_DISPLAY = '+91 99939 49604';
 export const OWNER_WHATSAPP = '919993949604';
 export const OWNER_PHONE_LINK = 'tel:+919993949604';
-export const OWNER_UPI_ID = '9993949604@ybl';
+export const OWNER_UPI_ID = 'abdullamahir7-2@okicici';
 export const OWNER_NAME = 'Murtaza Basra';
 export const OWNER_PASSWORD = '786530';
 

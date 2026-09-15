@@ -102,13 +102,14 @@ export function CartPage({ onOpenMap }: CartPageProps) {
     setPaymentModalOpen(true);
   };
 
-  const handleProcessOrderPayment = (_method: 'COD' = 'COD', paymentDetails?: string) => {
+  const handleProcessOrderPayment = (paymentMethod: 'COD' | 'ONLINE', paymentDetails?: string) => {
     setPaymentModalOpen(false);
+    const paymentStatus = paymentMethod === 'ONLINE' ? 'Paid (Online)' : 'Pending';
     const instruction = selectedInstruction === NO_INSTRUCTION ? '' : selectedInstruction;
-    const newOrder = createOrder(instruction, 'COD', 'Pending');
+    const newOrder = createOrder(instruction, paymentMethod, paymentStatus);
     const waUrl = sendCheckoutOrderToWhatsApp(newOrder, {
       instruction: instruction || NO_INSTRUCTION,
-      paymentDetails: paymentDetails || 'Cash on Delivery'
+      paymentDetails
     });
     window.open(waUrl, '_blank');
   };
@@ -437,7 +438,7 @@ export function CartPage({ onOpenMap }: CartPageProps) {
                 <span className="pay-subtitle">TOTAL TO PAY</span>
               </div>
               <div className="checkout-btn-right">
-                <span>Place Order (Cash on Delivery)</span>
+                <span>Select Payment Method (COD / Online UPI)</span>
                 <ChevronRight size={18} />
               </div>
             </button>
