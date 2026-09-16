@@ -116,40 +116,7 @@ export function PaymentModal({
         image: '/logo.png',
         prefill: {
           name: customerName || '',
-          contact: customerPhone || '',
-          method: 'upi'
-        },
-        config: {
-          display: {
-            blocks: {
-              upi: {
-                name: 'Pay via UPI / Apps',
-                instruments: [
-                  {
-                    method: 'upi'
-                  }
-                ]
-              },
-              other: {
-                name: 'Other Payment Methods',
-                instruments: [
-                  {
-                    method: 'card'
-                  },
-                  {
-                    method: 'netbanking'
-                  },
-                  {
-                    method: 'wallet'
-                  }
-                ]
-              }
-            },
-            sequence: ['block.upi', 'block.other'],
-            preferences: {
-              show_default_blocks: true
-            }
-          }
+          contact: customerPhone || ''
         },
         theme: {
           color: '#059669'
