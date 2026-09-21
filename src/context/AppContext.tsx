@@ -105,6 +105,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const saved = safeJSONParse<Product[] | null>('hakimi_catalog', null);
     return Array.isArray(saved) && saved.length > 0 ? saved : DEFAULT_PRODUCTS;
   });
+  // Tracks whether Firestore has delivered its first real snapshot for the catalog.
+  // Until it does, we show the localStorage cache. Once it fires, Firestore is the source of truth.
+  const catalogFirestoreReady = useRef(false);
   const [cart, setCart] = useState<Record<string, number>>(() => {
     const u = readUser();
     return u ? safeJSONParse<Record<string, number>>(`hakimi_cart_${u.phone}`, {}) : {};
@@ -269,12 +272,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const data = doc.data() as Partial<Product>;
           productsList.push({ id: doc.id, ...data } as Product);
         });
+
+        // Mark that Firestore has delivered its first snapshot.
+        // After this point, Firestore is the single source of truth for the catalog.
+        catalogFirestoreReady.current = true;
+
         if (productsList.length === 0) {
-          setCatalog(DEFAULT_PRODUCTS);
-          DEFAULT_PRODUCTS.forEach(async (p) => {
-            const { id, ...data } = p;
-            await setDoc(doc(db, 'products', id), data).catch(() => {});
-          });
+          // Firestore is genuinely empty (all products deleted by the owner).
+          // Do NOT re-seed — respect the owner's deletions.
+          setCatalog([]);
         } else {
           setCatalog((prev) => {
             const prevJson = JSON.stringify(prev);
@@ -285,14 +291,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
       (error) => {
         console.warn('[Firestore] products snapshot permission/network notice:', error.message);
-        setCatalog((prev) => (prev.length > 0 ? prev : (safeJSONParse<Product[] | null>('hakimi_catalog', null) || DEFAULT_PRODUCTS)));
+        // Only fall back to localStorage if Firestore has never successfully responded.
+        if (!catalogFirestoreReady.current) {
+          setCatalog((prev) => (prev.length > 0 ? prev : (safeJSONParse<Product[] | null>('hakimi_catalog', null) || DEFAULT_PRODUCTS)));
+        }
       }
     );
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    safeJSONStringify('hakimi_catalog', catalog);
+    // Only persist catalog to localStorage once Firestore has confirmed its state.
+    // This prevents a stale localStorage snapshot from masking deletions on the next page load.
+    if (catalogFirestoreReady.current || !isConfigured) {
+      safeJSONStringify('hakimi_catalog', catalog);
+    }
   }, [catalog]);
 
   // --- Orders real-time sync ---
