@@ -7,6 +7,40 @@ import type { Order, OrderStatus, Product } from '../types';
 import { Plus, Edit, Trash2, Package, Truck, Save, User, VolumeX, Bell, Upload, CheckCircle2, Search, X, AlertTriangle, MapPin } from 'lucide-react';
 import { compressImageFile } from '../lib/imageCompressor';
 
+function getOrderMapUrl(address: any): string {
+  if (!address) return 'https://www.google.com/maps';
+
+  // 1. Check gps object: { lat, lng } or { latitude, longitude }
+  const gps = address.gps || address.coordinates || address.coords;
+  const lat = gps?.lat ?? gps?.latitude;
+  const lng = gps?.lng ?? gps?.longitude;
+  if (lat !== undefined && lng !== undefined && !isNaN(Number(lat)) && !isNaN(Number(lng))) {
+    return `https://www.google.com/maps/search/?api=1&query=${Number(lat)},${Number(lng)}`;
+  }
+
+  // 2. Check if details string has embedded GPS coordinates
+  const detailsStr = typeof address === 'string' ? address : (address.details || address.street || address.address || '');
+  const gpsMatch = detailsStr.match(/(?:GPS(?:\s*Pin)?:?\s*|lat(?:itude)?:\s*)([-+]?\d*\.?\d+)\s*,\s*(?:lng(?:itude)?:\s*)?([-+]?\d*\.?\d+)/i);
+  if (gpsMatch && gpsMatch[1] && gpsMatch[2]) {
+    const mLat = Number(gpsMatch[1]);
+    const mLng = Number(gpsMatch[2]);
+    if (!isNaN(mLat) && !isNaN(mLng)) {
+      return `https://www.google.com/maps/search/?api=1&query=${mLat},${mLng}`;
+    }
+  }
+
+  // 3. Fallback to manual text address with city context
+  let query = detailsStr.replace(/\s*\(GPS:[^)]*\)/gi, '').replace(/📍\s*GPS Pin:[^,]*,[^)]*\)?/gi, '').trim();
+  if (query) {
+    if (!/ratlam/i.test(query)) {
+      query += ', Ratlam, Madhya Pradesh';
+    }
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  }
+
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('Hakimi Supermarket, Bohra Baakhal, Ratlam');
+}
+
 export function OwnerDashboard() {
   const {
     catalog,
@@ -377,40 +411,35 @@ export function OwnerDashboard() {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const addr = order.address;
-                          let url = '';
-                          if (addr?.gps && typeof addr.gps.lat === 'number' && typeof addr.gps.lng === 'number') {
-                            url = `https://www.google.com/maps?q=${addr.gps.lat},${addr.gps.lng}`;
-                          } else if (addr?.details) {
-                            url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr.details)}`;
-                          }
-                          if (url) {
-                            window.open(url, '_blank', 'noopener,noreferrer');
-                          }
-                        }}
+                      <a
+                        href={getOrderMapUrl(order.address)}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         title={
                           order.address?.gps
-                            ? `Open Customer Location in Google Maps (${order.address.gps.lat}, ${order.address.gps.lng})`
-                            : 'Search Address in Google Maps'
+                            ? `Open in Google Maps (${order.address.gps.lat}, ${order.address.gps.lng})`
+                            : 'Open customer location in Google Maps'
                         }
                         style={{
                           background: '#ecfdf5',
                           border: '1px solid #a7f3d0',
                           borderRadius: '8px',
-                          padding: '6px',
+                          padding: '5px 8px',
                           color: '#059669',
-                          cursor: 'pointer',
-                          display: 'flex',
+                          textDecoration: 'none',
+                          display: 'inline-flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
+                          gap: '4px',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          flexShrink: 0,
                           transition: 'all 0.15s ease'
                         }}
                       >
-                        <MapPin size={15} />
-                      </button>
+                        <MapPin size={14} />
+                        <span>Map</span>
+                      </a>
 
                       <select
                         className="status-dropdown"
@@ -450,30 +479,28 @@ export function OwnerDashboard() {
                       👤 {order.customerName} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({order.customerPhone})</span>
                     </div>
                     <div style={{ color: 'var(--text-secondary)', marginTop: '2px', fontSize: '11px' }}>
-                      📍 <strong>{order.address.type}:</strong> {order.address.details}
+                      📍 <strong>{order.address?.type || 'Address'}:</strong> {order.address?.details || 'No address details'}
                     </div>
-                    {order.address.gps && (
-                      <div
-                        onClick={() => {
-                          const url = `https://www.google.com/maps?q=${order.address.gps!.lat},${order.address.gps!.lng}`;
-                          window.open(url, '_blank', 'noopener,noreferrer');
-                        }}
+                    <div style={{ marginTop: '3px' }}>
+                      <a
+                        href={getOrderMapUrl(order.address)}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         style={{
-                          fontSize: '10px',
+                          fontSize: '10.5px',
                           color: 'var(--primary)',
                           fontWeight: 700,
-                          marginTop: '2px',
-                          cursor: 'pointer',
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '4px'
+                          gap: '4px',
+                          textDecoration: 'none'
                         }}
-                        title="Open GPS in Google Maps"
+                        title="Open in Google Maps"
                       >
-                        <span>🌐 GPS Coordinates: Lat {order.address.gps.lat}, Lng {order.address.gps.lng}</span>
-                        <span style={{ textDecoration: 'underline' }}>↗ View Map</span>
-                      </div>
-                    )}
+                        <span>🌐 {order.address?.gps ? `GPS: Lat ${order.address.gps.lat}, Lng ${order.address.gps.lng}` : 'View Customer Location'}</span>
+                        <span style={{ textDecoration: 'underline' }}>↗ Open Google Maps</span>
+                      </a>
+                    </div>
                     {order.instructions && (
                       <div className="admin-instructions-box">
                         💬 <strong>Instructions:</strong> "{order.instructions}"
