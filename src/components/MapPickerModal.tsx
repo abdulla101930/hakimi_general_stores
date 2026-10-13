@@ -62,8 +62,8 @@ export function MapPickerModal({ isOpen, onClose, onSelectAddress }: MapPickerMo
   };
 
   const handleConfirmLocation = () => {
-    if (!streetDetails.trim()) {
-      alert('Please enter street address / house details.');
+    if (!streetDetails.trim() || streetDetails.trim().startsWith('Pinned Location near GPS')) {
+      alert('Please enter your house/flat, street, or landmark details manually.');
       return;
     }
 

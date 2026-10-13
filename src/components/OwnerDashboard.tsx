@@ -4,7 +4,7 @@ import { FOOD_SUBDIVISIONS as FOOD_SUBS, HYGIENE_SUBDIVISIONS as HYG_SUBS } from
 import { stopOwnerRingingAlarm } from '../lib/sound';
 import { isImageSrc } from '../lib/cart';
 import type { Order, OrderStatus, Product } from '../types';
-import { Plus, Edit, Trash2, Package, Truck, Save, User, VolumeX, Bell, Upload, CheckCircle2, Search, X, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Truck, Save, User, VolumeX, Bell, Upload, CheckCircle2, Search, X, AlertTriangle, MapPin } from 'lucide-react';
 import { compressImageFile } from '../lib/imageCompressor';
 
 export function OwnerDashboard() {
@@ -377,6 +377,41 @@ export function OwnerDashboard() {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const addr = order.address;
+                          let url = '';
+                          if (addr?.gps && typeof addr.gps.lat === 'number' && typeof addr.gps.lng === 'number') {
+                            url = `https://www.google.com/maps?q=${addr.gps.lat},${addr.gps.lng}`;
+                          } else if (addr?.details) {
+                            url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr.details)}`;
+                          }
+                          if (url) {
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          }
+                        }}
+                        title={
+                          order.address?.gps
+                            ? `Open Customer Location in Google Maps (${order.address.gps.lat}, ${order.address.gps.lng})`
+                            : 'Search Address in Google Maps'
+                        }
+                        style={{
+                          background: '#ecfdf5',
+                          border: '1px solid #a7f3d0',
+                          borderRadius: '8px',
+                          padding: '6px',
+                          color: '#059669',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <MapPin size={15} />
+                      </button>
+
                       <select
                         className="status-dropdown"
                         value={order.status}
@@ -418,8 +453,25 @@ export function OwnerDashboard() {
                       📍 <strong>{order.address.type}:</strong> {order.address.details}
                     </div>
                     {order.address.gps && (
-                      <div style={{ fontSize: '10px', color: 'var(--primary)', fontWeight: 700, marginTop: '2px' }}>
-                        🌐 GPS Coordinates: Lat {order.address.gps.lat}, Lng {order.address.gps.lng}
+                      <div
+                        onClick={() => {
+                          const url = `https://www.google.com/maps?q=${order.address.gps!.lat},${order.address.gps!.lng}`;
+                          window.open(url, '_blank', 'noopener,noreferrer');
+                        }}
+                        style={{
+                          fontSize: '10px',
+                          color: 'var(--primary)',
+                          fontWeight: 700,
+                          marginTop: '2px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        title="Open GPS in Google Maps"
+                      >
+                        <span>🌐 GPS Coordinates: Lat {order.address.gps.lat}, Lng {order.address.gps.lng}</span>
+                        <span style={{ textDecoration: 'underline' }}>↗ View Map</span>
                       </div>
                     )}
                     {order.instructions && (
