@@ -7,12 +7,15 @@ import { sanitizeAppStorage } from './lib/storage.ts';
 
 sanitizeAppStorage();
 
-const SW_VERSION = 'v8';
+const SW_VERSION = 'v10-location-maps';
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register(`./sw.js?version=${SW_VERSION}`)
+      .then((reg) => {
+        reg.update().catch(() => {});
+      })
       .catch((err) => console.warn('Service worker registration failed:', err));
   });
 }

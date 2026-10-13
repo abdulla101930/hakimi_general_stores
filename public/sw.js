@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hakimi-pwa-v9-network-first';
+const CACHE_NAME = 'hakimi-pwa-v10-location-maps';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
